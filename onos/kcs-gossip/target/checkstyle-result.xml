@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<checkstyle version="8.10">
+<file name="/home/onos/kcs/onos/kcs-gossip/src/main/java/org/onosproject/kcsg/activator/package-info.java">
+</file>
+<file name="/home/onos/kcs/onos/kcs-gossip/src/main/java/org/onosproject/kcsg/activator/MyActivator.java">
+</file>
+<file name="/home/onos/kcs/onos/kcs-gossip/src/main/java/org/onosproject/kcsg/restapi/updateinfoapi/KcsgUpdateInfoApiService.java">
+</file>
+<file name="/home/onos/kcs/onos/kcs-gossip/src/main/java/org/onosproject/kcsg/restapi/updateinfoapi/package-info.java">
+</file>
+<file name="/home/onos/kcs/onos/kcs-gossip/src/main/java/org/onosproject/kcsg/restapi/updateinfoapi/KcsgUpdateInfoApi.java">
+</file>
+<file name="/home/onos/kcs/onos/kcs-gossip/src/main/java/org/onosproject/kcsg/restapi/communicateapi/package-info.java">
+</file>
+<file name="/home/onos/kcs/onos/kcs-gossip/src/main/java/org/onosproject/kcsg/restapi/communicateapi/models/DataUpdateModel.java">
+</file>
+<file name="/home/onos/kcs/onos/kcs-gossip/src/main/java/org/onosproject/kcsg/restapi/communicateapi/models/package-info.java">
+</file>
+<file name="/home/onos/kcs/onos/kcs-gossip/src/main/java/org/onosproject/kcsg/restapi/communicateapi/models/VersionModel.java">
+</file>
+<file name="/home/onos/kcs/onos/kcs-gossip/src/main/java/org/onosproject/kcsg/restapi/communicateapi/KcsgCommunicateApiService.java">
+</file>
+<file name="/home/onos/kcs/onos/kcs-gossip/src/main/java/org/onosproject/kcsg/restapi/communicateapi/KcsgCommunicateApi.java">
+</file>
+<file name="/home/onos/kcs/onos/kcs-gossip/src/main/java/org/onosproject/kcsg/restapi/package-info.java">
+</file>
+<file name="/home/onos/kcs/onos/kcs-gossip/src/main/java/org/onosproject/kcsg/restapi/KcsgApiManager.java">
+</file>
+<file name="/home/onos/kcs/onos/kcs-gossip/src/main/java/org/onosproject/kcsg/restapi/localtopologyapi/KcsgLocalTopologyApiService.java">
+</file>
+<file name="/home/onos/kcs/onos/kcs-gossip/src/main/java/org/onosproject/kcsg/restapi/localtopologyapi/package-info.java">
+</file>
+<file name="/home/onos/kcs/onos/kcs-gossip/src/main/java/org/onosproject/kcsg/restapi/localtopologyapi/KcsgLocalTopologyApi.java">
+</file>
+<file name="/home/onos/kcs/onos/kcs-gossip/src/main/java/org/onosproject/kcsg/locallistener/HandleVersion.java">
+</file>
+<file name="/home/onos/kcs/onos/kcs-gossip/src/main/java/org/onosproject/kcsg/locallistener/KcsgListenerManager.java">
+</file>
+<file name="/home/onos/kcs/onos/kcs-gossip/src/main/java/org/onosproject/kcsg/locallistener/package-info.java">
+</file>
+<file name="/home/onos/kcs/onos/kcs-gossip/src/main/java/org/onosproject/kcsg/locallistener/models/InforControllerModel.java">
+</file>
+<file name="/home/onos/kcs/onos/kcs-gossip/src/main/java/org/onosproject/kcsg/locallistener/models/package-info.java">
+</file>
+</checkstyle>
