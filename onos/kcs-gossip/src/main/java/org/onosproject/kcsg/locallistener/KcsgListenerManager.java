@@ -290,7 +290,7 @@ public class KcsgListenerManager {
                 try {
                     String path = System.getProperty("java.io.tmpdir");
                     outputStreamWriter = new OutputStreamWriter(
-                            new FileOutputStream(path + "/" + myIpAddress + ".json", false), StandardCharsets.UTF_8);
+                            new FileOutputStream(path + "/" + updateData.ip + ".json", false), StandardCharsets.UTF_8);
                     bufferWriter = new BufferedWriter(outputStreamWriter);
                     bufferWriter.write(updateData.data);
                     log.info("update success data from ip:" + updateData.ip);
@@ -388,12 +388,51 @@ public class KcsgListenerManager {
                     break;
                 }
                 case "Faucet": {
-                    String url = "http://" + mem.ip + ":8080/faucet/sina/updateInfo/updateData";
+                    log.info("http://" + mem.ip + ":8080/faucet/sina/versions/get-new");
+                    String url = "http://" + mem.ip + ":8080/faucet/sina/versions/get-new";
 
                     Unirest.setTimeouts(0, 0);
                     try {
-                        HttpResponse<String> response = Unirest.post(url).header("Content-Type", "application/json")
-                                .header("Accept", "application/json").body(jsonVer).asString();
+                        HttpResponse<String> response = Unirest.post(url)
+                                .header("Content-Type", "application/json")
+                                .header("Accept", "application/json")
+                                .header("Authorization", "Basic a2FyYWY6a2FyYWY=")
+                                .body(jsonVer).asString();
+                        if (response.getStatus() == 200) {
+                            String body = response.getBody();
+                            log.info("BODY: " + body);
+                            JSONArray datas = new JSONArray();
+                            JSONArray arr = new JSONArray(body);
+
+                            int len = arr.length();
+                            for (int i = 0; i < len; i++) {
+                                String ip = arr.getString(i);
+                                int ver = HandleVersion.getVersion(ip);
+                                String data = HandleVersion.getData(ip);
+
+                                JSONObject json = new JSONObject();
+                                json.put("ip", ip);
+                                json.put("version", ver);
+                                json.put("content", data);
+                                datas.put(json);
+                            }
+                            if (len > 0) {
+                                log.info("http://" + mem.ip + ":8080/faucet/sina/log/update");
+                                HttpResponse<String> resUpdateData = Unirest
+                                    .post("http://" + mem.ip + ":8080/faucet/sina/log/update")
+                                    .header("Content-Type", "application/json")
+                                    .header("Accept", "application/json")
+                                    .header("Authorization", "Basic a2FyYWY6a2FyYWY=")
+                                    .body(datas.toString()).asString();
+                                if (resUpdateData.getStatus() == 200) {
+                                    log.info("send update data success");
+                                } else {
+                                    log.warn("send update data fail with status code: " + resUpdateData.getStatus());
+                                }
+                            }
+                        } else {
+                            log.warn("compare version with status code: " + response.getStatus());
+                        }
                     } catch (Exception e) {
                         log.error(e.getMessage());
                     }
