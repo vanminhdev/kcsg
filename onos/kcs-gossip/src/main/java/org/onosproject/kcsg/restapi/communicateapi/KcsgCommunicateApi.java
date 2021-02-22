@@ -44,8 +44,8 @@ public class KcsgCommunicateApi extends BaseResource {
             String key = keys.next();
             log.info(key);
             VersionModel model = new VersionModel();
-            model.ip = key;
-            model.ver = jsonObject.getInt(key);
+            model.setIp(key);
+            model.setVer(jsonObject.getInt(key));
             versions.add(model);
         }
         KcsgCommunicateApiService service = get(KcsgCommunicateApiService.class);
@@ -76,9 +76,9 @@ public class KcsgCommunicateApi extends BaseResource {
             String data = obj.getString("data");
 
             DataUpdateModel model = new DataUpdateModel();
-            model.ip = ip;
-            model.version = ver;
-            model.data = data;
+            model.setIp(ip);
+            model.setVersion(ver);
+            model.setData(data);
             KcsgListenerManager.updateDataQueue.add(model);
         }
         return Response.ok().build();

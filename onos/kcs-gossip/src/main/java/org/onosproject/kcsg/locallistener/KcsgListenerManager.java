@@ -278,22 +278,24 @@ public class KcsgListenerManager {
         if (updateData != null) {
             // lock
             KcsgListenerManager.lockFlag = true;
-            int currVer = HandleVersion.getVersion(updateData.ip);
+            int currVer = HandleVersion.getVersion(updateData.getIp());
             // nho hon thi cap nhat
-            if (currVer < updateData.version) {
-                log.info("start update data from ip:" + updateData.ip);
+            if (currVer < updateData.getVersion()) {
+                log.info("start update data from ip:" + updateData.getIp());
                 //update version
-                HandleVersion.setVersion(updateData.ip, updateData.version);
+                HandleVersion.setVersion(updateData.getIp(), updateData.getVersion());
                 //update data
                 Writer outputStreamWriter = null;
                 BufferedWriter bufferWriter = null;
                 try {
                     String path = System.getProperty("java.io.tmpdir");
                     outputStreamWriter = new OutputStreamWriter(
-                            new FileOutputStream(path + "/" + updateData.ip + ".json", false), StandardCharsets.UTF_8);
+                        new FileOutputStream(path + "/" + updateData.getIp() + ".json", false),
+                        StandardCharsets.UTF_8
+                    );
                     bufferWriter = new BufferedWriter(outputStreamWriter);
-                    bufferWriter.write(updateData.data);
-                    log.info("update success data from ip:" + updateData.ip);
+                    bufferWriter.write(updateData.getData());
+                    log.info("update success data from ip:" + updateData.getIp());
                 } catch (IOException e) {
                     log.error("Error when write data file");
                 } finally {
@@ -332,10 +334,10 @@ public class KcsgListenerManager {
             KcsgListenerManager.memberList.remove(index);
 
             String jsonVer = HandleVersion.getVersions();
-            if (mem == null || mem.ip == null || mem.kindController == null) {
+            if (mem == null || mem.getIp() == null || mem.getKindController() == null) {
                 return;
             }
-            switch (mem.kindController) {
+            switch (mem.getKindController()) {
                 case "ONOS": {
                     Unirest.setTimeouts(0, 0);
                     try {
@@ -344,7 +346,7 @@ public class KcsgListenerManager {
 
                         // log.info(contentComp.toString());
                         HttpResponse<String> response = Unirest
-                            .post("http://" + mem.ip + ":8181/onos/kcsg/communicate/compareVersions")
+                            .post("http://" + mem.getIp() + ":8181/onos/kcsg/communicate/compareVersions")
                             .header("Content-Type", "application/json")
                             .header("Accept", "application/json")
                             .header("Authorization", "Basic a2FyYWY6a2FyYWY=")
@@ -368,7 +370,7 @@ public class KcsgListenerManager {
                             }
                             if (len > 0) {
                                 HttpResponse<String> resUpdateData = Unirest
-                                    .put("http://" + mem.ip + ":8181/onos/kcsg/communicate/updateNewLog")
+                                    .put("http://" + mem.getIp() + ":8181/onos/kcsg/communicate/updateNewLog")
                                     .header("Content-Type", "application/json")
                                     .header("Accept", "application/json")
                                     .header("Authorization", "Basic a2FyYWY6a2FyYWY=")
@@ -388,8 +390,8 @@ public class KcsgListenerManager {
                     break;
                 }
                 case "Faucet": {
-                    log.info("http://" + mem.ip + ":8080/faucet/sina/versions/get-new");
-                    String url = "http://" + mem.ip + ":8080/faucet/sina/versions/get-new";
+                    log.info("http://" + mem.getIp() + ":8080/faucet/sina/versions/get-new");
+                    String url = "http://" + mem.getIp() + ":8080/faucet/sina/versions/get-new";
 
                     Unirest.setTimeouts(0, 0);
                     try {
@@ -417,9 +419,9 @@ public class KcsgListenerManager {
                                 datas.put(json);
                             }
                             if (len > 0) {
-                                log.info("http://" + mem.ip + ":8080/faucet/sina/log/update");
+                                log.info("http://" + mem.getIp() + ":8080/faucet/sina/log/update");
                                 HttpResponse<String> resUpdateData = Unirest
-                                    .post("http://" + mem.ip + ":8080/faucet/sina/log/update")
+                                    .post("http://" + mem.getIp() + ":8080/faucet/sina/log/update")
                                     .header("Content-Type", "application/json")
                                     .header("Accept", "application/json")
                                     .header("Authorization", "Basic a2FyYWY6a2FyYWY=")
@@ -439,7 +441,7 @@ public class KcsgListenerManager {
                     break;
                 }
                 case "ODL": {
-                    String url = "http://" + mem.ip + ":8181/restconf/operations/kcsg:compareVersions";
+                    String url = "http://" + mem.getIp() + ":8181/restconf/operations/kcsg:compareVersions";
 
                     Unirest.setTimeouts(0, 0);
                     try {

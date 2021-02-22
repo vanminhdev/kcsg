@@ -24,12 +24,12 @@ public final class HandleVersion {
 
         InforControllerModel local = getLocal();
         if (local != null) {
-            jsonVersion.put(local.ip, 1);
+            jsonVersion.put(local.getIp(), 1);
         }
 
         ArrayList<InforControllerModel> mems = getMembers();
         for (InforControllerModel mem : mems) {
-            jsonVersion.put(mem.ip, 1);
+            jsonVersion.put(mem.getIp(), 1);
         }
         Writer outputStreamWriter = null;
         BufferedWriter bufferWriter = null;
@@ -238,8 +238,8 @@ public final class HandleVersion {
             String localIp = object.getString("localIp");
             String kindController = object.getString("controller");
             infor = new InforControllerModel();
-            infor.ip = localIp;
-            infor.kindController = kindController;
+            infor.setIp(localIp);
+            infor.setKindController(kindController);
         } catch (Exception e) {
             //log.error(e.getMessage());
         } finally {
@@ -287,8 +287,8 @@ public final class HandleVersion {
                 String kindController = controller.getString("controller");
 
                 InforControllerModel model = new InforControllerModel();
-                model.ip = destIp;
-                model.kindController = kindController;
+                model.setIp(destIp);
+                model.setKindController(kindController);
 
                 mems.add(model);
             }
@@ -334,7 +334,7 @@ public final class HandleVersion {
             for (int i = 0; i < len; i++) {
                 JSONObject controller = arr.getJSONObject(i);
                 String destIp = controller.getString("ip");
-                if (destIp == ip) {
+                if (destIp.equals(ip)) {
                     String kindController = controller.getString("controller");
                     return kindController;
                 }
