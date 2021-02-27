@@ -1,5 +1,5 @@
 Manifest-Version: 1.0
-Bnd-LastModified: 1614093526429
+Bnd-LastModified: 1614139187953
 Build-Jdk-Spec: 11
 Bundle-Activator: org.onosproject.kcsg.activator.MyActivator
 Bundle-ClassPath: WEB-INF/classes

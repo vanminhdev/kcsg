@@ -334,9 +334,9 @@ public class KcsgListenerManager {
                         log.error("Error when close writer update data");
                     }
                 }
-                // unlock
-                KcsgListenerManager.lockFlag = false;
             }
+            // unlock
+            KcsgListenerManager.lockFlag = false;
         }
     }
 
