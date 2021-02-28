@@ -26,12 +26,12 @@ public final class HandleVersion {
 
         InforControllerModel local = getLocal();
         if (local != null) {
-            jsonVersion.put(local.getIp(), 1);
+            jsonVersion.put(local.getIp(), 0);
         }
 
         ArrayList<InforControllerModel> mems = getMembers();
         for (InforControllerModel mem : mems) {
-            jsonVersion.put(mem.getIp(), 1);
+            jsonVersion.put(mem.getIp(), 0);
         }
         Writer outputStreamWriter = null;
         BufferedWriter bufferWriter = null;
@@ -197,10 +197,47 @@ public final class HandleVersion {
             String line;
             StringBuilder strBuilder = new StringBuilder();
             while ((line = buffReader.readLine()) != null) {
-                strBuilder.append(line);
+                strBuilder.append(line + "\n");
             }
             return strBuilder.toString();
         } catch (Exception e) {
+            //log.error(e.getMessage());
+        } finally {
+            try {
+                if (buffReader != null) {
+                    buffReader.close();
+                }
+                if (inputStreamReader != null) {
+                    inputStreamReader.close();
+                }
+            } catch (IOException e) {
+                //log.error(e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public static String getDiffData(String ip, int oldVer) {
+        String path = INIT_PATH;
+
+        InputStreamReader inputStreamReader = null;
+        BufferedReader buffReader = null;
+        try {
+            inputStreamReader = new InputStreamReader(
+                new FileInputStream(path + "/" + ip + ".json"), StandardCharsets.UTF_8
+            );
+            buffReader = new BufferedReader(inputStreamReader);
+            String line;
+            StringBuilder strBuilder = new StringBuilder();
+            int numRow = 0;
+            while ((line = buffReader.readLine()) != null) {
+                numRow++;
+                if (numRow > oldVer) {
+                    strBuilder.append(line + "\n");
+                }
+            }
+            return strBuilder.toString();
+        } catch (IOException e) {
             //log.error(e.getMessage());
         } finally {
             try {

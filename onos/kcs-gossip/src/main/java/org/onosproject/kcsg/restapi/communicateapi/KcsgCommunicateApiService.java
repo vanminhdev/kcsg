@@ -14,5 +14,5 @@ public interface KcsgCommunicateApiService {
      * @param versions versions
      * @return ip list for update
      */
-    ArrayList<String> compareVersions(ArrayList<VersionModel> versions);
+    ArrayList<VersionModel> compareVersions(ArrayList<VersionModel> versions);
 }

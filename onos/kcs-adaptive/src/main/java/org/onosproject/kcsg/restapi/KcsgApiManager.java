@@ -127,14 +127,14 @@ public class KcsgApiManager
     }
 
     @Override
-    public ArrayList<String> compareVersions(ArrayList<VersionModel> versions) {
-        ArrayList<String> ips = new ArrayList<>();
+    public ArrayList<VersionModel> compareVersions(ArrayList<VersionModel> versions) {
+        ArrayList<VersionModel> ips = new ArrayList<>();
         for (VersionModel item : versions) {
             log.info("ip :" + item.getIp() + " current ver " + item.getVer());
             int currVer = HandleVersion.getVersion(item.getIp());
             //hien tai nho hon gui toi => can update
             if (currVer < item.getVer()) {
-                ips.add(item.getIp());
+                ips.add(item);
             }
             //ips.add(item.ip);
         }

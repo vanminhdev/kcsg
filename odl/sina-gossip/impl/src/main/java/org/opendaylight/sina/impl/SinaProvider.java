@@ -385,7 +385,6 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
             }
             switch (mem.kindController) {
                 case "ONOS": {
-                    Unirest.setTimeouts(0, 0);
                     try {
                         // JSONObject contentComp = new JSONObject();
                         // contentComp.put("ver", jsonVer);
@@ -436,7 +435,6 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
                     LOG.info("http://" + mem.ip + ":8080/faucet/sina/versions/get-new");
                     String url = "http://" + mem.ip + ":8080/faucet/sina/versions/get-new";
 
-                    Unirest.setTimeouts(0, 0);
                     try {
                         HttpResponse<String> response = Unirest.post(url).header("Content-Type", "application/json")
                                 .header("Accept", "application/json").header("Authorization", "Basic a2FyYWY6a2FyYWY=")
@@ -481,7 +479,6 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
                     break;
                 }
                 case "ODL": {
-                    Unirest.setTimeouts(0, 0);
                     try {
                         JSONObject bodyComp = new JSONObject();
                         JSONObject verData = new JSONObject();
