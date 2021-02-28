@@ -34,12 +34,12 @@ public final class HandleVersion {
 
         InforControllerModel local = getLocal();
         if (local != null) {
-            jsonVersion.put(local.ip, 0);
+            jsonVersion.put(local.getIp(), 0);
         }
 
         ArrayList<InforControllerModel> mems = getMembers();
         for (InforControllerModel mem : mems) {
-            jsonVersion.put(mem.ip, 0);
+            jsonVersion.put(mem.getIp(), 0);
         }
         Writer outputStreamWriter = null;
         BufferedWriter bufferWriter = null;
@@ -205,7 +205,7 @@ public final class HandleVersion {
             String line;
             StringBuilder strBuilder = new StringBuilder();
             while ((line = buffReader.readLine()) != null) {
-                strBuilder.append(line);
+                strBuilder.append(line + "\n");
             }
             return strBuilder.toString();
         } catch (IOException e) {
@@ -241,7 +241,7 @@ public final class HandleVersion {
             while ((line = buffReader.readLine()) != null) {
                 numRow++;
                 if (numRow > oldVer) {
-                    strBuilder.append(line);
+                    strBuilder.append(line + "\n");
                 }
             }
             return strBuilder.toString();
@@ -285,8 +285,8 @@ public final class HandleVersion {
             String localIp = object.getString("localIp");
             String kindController = object.getString("controller");
             infor = new InforControllerModel();
-            infor.ip = localIp;
-            infor.kindController = kindController;
+            infor.setIp(localIp);
+            infor.setKindController(kindController);
         } catch (IOException e) {
             //log.error(e.getMessage());
         } finally {
@@ -334,8 +334,8 @@ public final class HandleVersion {
                 String kindController = controller.getString("controller");
 
                 InforControllerModel model = new InforControllerModel();
-                model.ip = destIp;
-                model.kindController = kindController;
+                model.setIp(destIp);
+                model.setKindController(kindController);
 
                 mems.add(model);
             }

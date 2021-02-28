@@ -8,6 +8,22 @@
 package org.opendaylight.sina.impl.models;
 
 public class InforControllerModel {
-    public String kindController;
-    public String ip;
+    private String kindController;
+    private String ip;
+
+    public String getKindController() {
+        return kindController;
+    }
+
+    public String getIp() {
+        return ip;
+    }
+
+    public void setIp(String ip) {
+        this.ip = ip;
+    }
+
+    public void setKindController(String kindController) {
+        this.kindController = kindController;
+    }
 }
