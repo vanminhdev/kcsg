@@ -1,0 +1,10 @@
+{
+	"localIp": "192.168.131.137",
+	"controller": "Faucet", 
+	"communication": [
+		{
+			"ip": "192.168.131.140", 
+			"controller": "ONOS"
+		}
+	]
+}
