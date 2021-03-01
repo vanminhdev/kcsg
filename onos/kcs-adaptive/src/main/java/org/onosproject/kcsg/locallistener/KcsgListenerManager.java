@@ -37,6 +37,7 @@ import java.util.TimerTask;
 
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -91,7 +92,7 @@ public class KcsgListenerManager {
         linkService.addListener(linkListener);
         hostService.addListener(hostListener);
         log.info("Started kcsg");
-        myIpAddress = "192.168.50.131";
+        myIpAddress = "192.168.43.152";
         init();
         scheduleWriteLogChange();
         scheduleUpdateData();
@@ -262,8 +263,22 @@ public class KcsgListenerManager {
                 );
                 bufferWriter = new BufferedWriter(outputStreamWriter);
                 bufferWriter.append(strLog);
-            } catch (Exception e) {
+
+                JSONObject bodyReq = new JSONObject();
+                bodyReq.put("ipSender", myIpAddress);
+                bodyReq.put("ipReceiver", myIpAddress);
+                bodyReq.put("time", java.time.LocalDateTime.now());
+                bodyReq.put("version", HandleVersion.getVersion(myIpAddress));
+
+                HttpResponse<String> response = Unirest
+                    .post("http://192.168.43.176:8085/api/log/write")
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .body(bodyReq).asString();
+            } catch (IOException e) {
                 log.error("Error when write change log file");
+            } catch (UnirestException e) {
+                log.error("Error when call api log time");
             } finally {
                 // unlock
                 KcsgListenerManager.lockFlag = false;
@@ -320,8 +335,22 @@ public class KcsgListenerManager {
                     bufferWriter = new BufferedWriter(outputStreamWriter);
                     bufferWriter.append(updateData.getData());
                     log.info("update success data from ip:" + updateData.getIp());
+
+                    JSONObject bodyReq = new JSONObject();
+                    bodyReq.put("ipSender", updateData.getIp());
+                    bodyReq.put("ipReceiver", myIpAddress);
+                    bodyReq.put("time", java.time.LocalDateTime.now());
+                    bodyReq.put("version", updateData.getVersion());
+
+                    HttpResponse<String> response = Unirest
+                        .post("http://192.168.43.176:8085/api/log/write")
+                        .header("Content-Type", "application/json")
+                        .header("Accept", "application/json")
+                        .body(bodyReq).asString();
                 } catch (IOException e) {
                     log.error("Error when write data file");
+                } catch (UnirestException e) {
+                    log.error("Error when call api log time");
                 } finally {
                     try {
                         if (bufferWriter != null) {
