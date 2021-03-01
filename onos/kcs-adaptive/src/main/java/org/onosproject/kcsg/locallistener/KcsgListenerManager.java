@@ -422,6 +422,7 @@ public class KcsgListenerManager {
                                 .header("Accept", "application/json")
                                 .header("Authorization", "Basic a2FyYWY6a2FyYWY=")
                                 .body(strVer).asString();
+                        log.info("RES: " + response.getBody() + " | " + response.getStatus());
                         if (response.getStatus() == 200) {
                             String body = response.getBody();
                             log.info("BODY: " + body);
@@ -430,12 +431,15 @@ public class KcsgListenerManager {
 
                             int len = arr.length();
                             for (int i = 0; i < len; i++) {
-                                String ip = arr.getString(i);
-                                int ver = HandleVersion.getVersion(ip);
-                                String data = HandleVersion.getData(ip);
+                                JSONObject resVerModel = arr.getJSONObject(i);
+                                String resIp = resVerModel.getString("ip");
+                                int resVer = resVerModel.getInt("version");
+
+                                int ver = HandleVersion.getVersion(resIp);
+                                String data = HandleVersion.getDiffData(resIp, resVer);
 
                                 JSONObject json = new JSONObject();
-                                json.put("ip", ip);
+                                json.put("ip", resIp);
                                 json.put("version", ver);
                                 json.put("content", data);
                                 datas.put(json);
@@ -458,7 +462,7 @@ public class KcsgListenerManager {
                             log.warn("compare version with status code: " + response.getStatus());
                         }
                     } catch (Exception e) {
-                        log.error(e.getMessage());
+                        log.error("CATCH: " + e.getMessage());
                     }
                     break;
                 }

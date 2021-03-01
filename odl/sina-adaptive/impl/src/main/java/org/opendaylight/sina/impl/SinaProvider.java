@@ -448,51 +448,56 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
                     break;
                 }
                 case "Faucet": {
-                    LOG.info("http://" + mem.getIp() + ":8080/faucet/sina/versions/get-new");
+                    log.info("http://" + mem.getIp() + ":8080/faucet/sina/versions/get-new");
                     String url = "http://" + mem.getIp() + ":8080/faucet/sina/versions/get-new";
 
                     try {
-                        HttpResponse<String> response = Unirest.post(url).header("Content-Type", "application/json")
-                                .header("Accept", "application/json").header("Authorization", "Basic a2FyYWY6a2FyYWY=")
+                        HttpResponse<String> response = Unirest.post(url)
+                                .header("Content-Type", "application/json")
+                                .header("Accept", "application/json")
+                                .header("Authorization", "Basic a2FyYWY6a2FyYWY=")
                                 .body(strVer).asString();
+                        log.info("RES: " + response.getBody() + " | " + response.getStatus());
                         if (response.getStatus() == 200) {
                             String body = response.getBody();
-                            LOG.info("BODY: " + body);
+                            log.info("BODY: " + body);
                             JSONArray datas = new JSONArray();
                             JSONArray arr = new JSONArray(body);
 
                             int len = arr.length();
                             for (int i = 0; i < len; i++) {
-                                String ip = arr.getString(i);
-                                int ver = HandleVersion.getVersion(ip);
-                                String data = HandleVersion.getData(ip);
+                                JSONObject resVerModel = arr.getJSONObject(i);
+                                String resIp = resVerModel.getString("ip");
+                                int resVer = resVerModel.getInt("version");
+
+                                int ver = HandleVersion.getVersion(resIp);
+                                String data = HandleVersion.getDiffData(resIp, resVer);
 
                                 JSONObject json = new JSONObject();
-                                json.put("ip", ip);
+                                json.put("ip", resIp);
                                 json.put("version", ver);
                                 json.put("content", data);
                                 datas.put(json);
                             }
                             if (len > 0) {
-                                LOG.info("http://" + mem.getIp() + ":8080/faucet/sina/log/update");
+                                log.info("http://" + mem.getIp() + ":8080/faucet/sina/log/update");
                                 HttpResponse<String> resUpdateData = Unirest
-                                        .post("http://" + mem.getIp() + ":8080/faucet/sina/log/update")
-                                        .header("Content-Type", "application/json").header("Accept", "application/json")
-                                        .header("Authorization", "Basic a2FyYWY6a2FyYWY=").body(datas.toString())
-                                        .asString();
+                                    .post("http://" + mem.getIp() + ":8080/faucet/sina/log/update")
+                                    .header("Content-Type", "application/json")
+                                    .header("Accept", "application/json")
+                                    .header("Authorization", "Basic a2FyYWY6a2FyYWY=")
+                                    .body(datas.toString()).asString();
                                 if (resUpdateData.getStatus() == 200) {
-                                    LOG.info("send update data success");
+                                    log.info("send update data success");
                                 } else {
-                                    LOG.warn("send update data fail with status code: " + resUpdateData.getStatus());
+                                    log.warn("send update data fail with status code: " + resUpdateData.getStatus());
                                 }
                             }
                         } else {
-                            LOG.warn("compare version with status code: " + response.getStatus());
+                            log.warn("compare version with status code: " + response.getStatus());
                         }
-                    } catch (UnirestException e) {
-                        LOG.error(e.getMessage());
-                    } catch (JSONException e) {
-                        LOG.error(e.getMessage());
+                    } catch (Exception e) {
+                        log.error("CATCH: " + e.getMessage());
                     }
                     break;
                 }
