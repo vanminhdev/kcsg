@@ -16,32 +16,33 @@ import org.json.JSONObject;
 import org.onosproject.kcsg.locallistener.models.InforControllerModel;
 
 public final class HandleVersion {
-    private HandleVersion() {}
+    private static final String INIT_PATH = System.getProperty("java.io.tmpdir");
+
+    private HandleVersion() {
+    }
 
     public static void createVersion() {
-        String path = System.getProperty("java.io.tmpdir");
+        String path = INIT_PATH;
         JSONObject jsonVersion = new JSONObject();
 
         InforControllerModel local = getLocal();
         if (local != null) {
-            jsonVersion.put(local.getIp(), 1);
+            jsonVersion.put(local.getIp(), 0);
         }
 
         ArrayList<InforControllerModel> mems = getMembers();
         for (InforControllerModel mem : mems) {
-            jsonVersion.put(mem.getIp(), 1);
+            jsonVersion.put(mem.getIp(), 0);
         }
         Writer outputStreamWriter = null;
         BufferedWriter bufferWriter = null;
         try {
-            outputStreamWriter = new OutputStreamWriter(
-                new FileOutputStream(path + "/version.json", false),
-                StandardCharsets.UTF_8
-            );
+            outputStreamWriter = new OutputStreamWriter(new FileOutputStream(path + "/version.json", false),
+                    StandardCharsets.UTF_8);
             bufferWriter = new BufferedWriter(outputStreamWriter);
             bufferWriter.write(jsonVersion.toString());
         } catch (Exception e) {
-            //log.error(e.getMessage(), e);
+            // log.error(e.getMessage(), e);
         } finally {
             // unlock
             KcsgListenerManager.lockFlag = false;
@@ -53,20 +54,19 @@ public final class HandleVersion {
                     outputStreamWriter.close();
                 }
             } catch (IOException e) {
-                //log.error(e.getMessage(), e);
+                // log.error(e.getMessage(), e);
             }
         }
     }
 
     public static int getVersion(String ip) {
-        String path = System.getProperty("java.io.tmpdir");
+        String path = INIT_PATH;
 
         InputStreamReader inputStreamReader = null;
         BufferedReader buffReader = null;
         try {
-            inputStreamReader = new InputStreamReader(
-                new FileInputStream(path + "/version.json"), StandardCharsets.UTF_8
-            );
+            inputStreamReader = new InputStreamReader(new FileInputStream(path + "/version.json"),
+                    StandardCharsets.UTF_8);
             buffReader = new BufferedReader(inputStreamReader);
             String line;
 
@@ -75,7 +75,7 @@ public final class HandleVersion {
                 return obj.getInt(ip);
             }
         } catch (Exception e) {
-            //log.error(e.getMessage());
+            // log.error(e.getMessage());
         } finally {
             try {
                 if (buffReader != null) {
@@ -85,26 +85,25 @@ public final class HandleVersion {
                     inputStreamReader.close();
                 }
             } catch (IOException e) {
-                //log.error(e.getMessage());
+                // log.error(e.getMessage());
             }
         }
         return -1;
     }
 
     public static String getVersions() {
-        String path = System.getProperty("java.io.tmpdir");
+        String path = INIT_PATH;
 
         InputStreamReader inputStreamReader = null;
         BufferedReader buffReader = null;
         try {
-            inputStreamReader = new InputStreamReader(
-                new FileInputStream(path + "/version.json"), StandardCharsets.UTF_8
-            );
+            inputStreamReader = new InputStreamReader(new FileInputStream(path + "/version.json"),
+                    StandardCharsets.UTF_8);
             buffReader = new BufferedReader(inputStreamReader);
             String line = buffReader.readLine();
             return line;
         } catch (Exception e) {
-            //log.error(e.getMessage());
+            // log.error(e.getMessage());
         } finally {
             try {
                 if (buffReader != null) {
@@ -114,21 +113,20 @@ public final class HandleVersion {
                     inputStreamReader.close();
                 }
             } catch (IOException e) {
-                //log.error(e.getMessage());
+                // log.error(e.getMessage());
             }
         }
         return null;
     }
 
     public static void setVersion(String ip, int version) {
-        String path = System.getProperty("java.io.tmpdir");
+        String path = INIT_PATH;
         JSONObject jsonVersion = null;
         InputStreamReader inputStreamReader = null;
         BufferedReader buffReader = null;
         try {
-            inputStreamReader = new InputStreamReader(
-                new FileInputStream(path + "/version.json"), StandardCharsets.UTF_8
-            );
+            inputStreamReader = new InputStreamReader(new FileInputStream(path + "/version.json"),
+                    StandardCharsets.UTF_8);
             buffReader = new BufferedReader(inputStreamReader);
             String line;
 
@@ -136,7 +134,7 @@ public final class HandleVersion {
                 jsonVersion = new JSONObject(line);
             }
         } catch (Exception e) {
-            //log.error(e.getMessage(), e);
+            // log.error(e.getMessage(), e);
         } finally {
             try {
                 if (buffReader != null) {
@@ -146,7 +144,7 @@ public final class HandleVersion {
                     inputStreamReader.close();
                 }
             } catch (IOException e) {
-                //log.error(e.getMessage(), e);
+                // log.error(e.getMessage(), e);
             }
         }
 
@@ -158,14 +156,12 @@ public final class HandleVersion {
         Writer outputStreamWriter = null;
         BufferedWriter bufferWriter = null;
         try {
-            outputStreamWriter = new OutputStreamWriter(
-                new FileOutputStream(path + "/version.json", false),
-                StandardCharsets.UTF_8
-            );
+            outputStreamWriter = new OutputStreamWriter(new FileOutputStream(path + "/version.json", false),
+                    StandardCharsets.UTF_8);
             bufferWriter = new BufferedWriter(outputStreamWriter);
             bufferWriter.write(jsonVersion.toString());
         } catch (Exception e) {
-            //log.error(e.getMessage(), e);
+            // log.error(e.getMessage(), e);
         } finally {
             // unlock
             KcsgListenerManager.lockFlag = false;
@@ -177,29 +173,28 @@ public final class HandleVersion {
                     outputStreamWriter.close();
                 }
             } catch (IOException e) {
-                //log.error(e.getMessage(), e);
+                // log.error(e.getMessage(), e);
             }
         }
     }
 
     public static String getData(String ip) {
-        String path = System.getProperty("java.io.tmpdir");
+        String path = INIT_PATH;
 
         InputStreamReader inputStreamReader = null;
         BufferedReader buffReader = null;
         try {
-            inputStreamReader = new InputStreamReader(
-                new FileInputStream(path + "/" + ip + ".json"), StandardCharsets.UTF_8
-            );
+            inputStreamReader = new InputStreamReader(new FileInputStream(path + "/" + ip + ".json"),
+                    StandardCharsets.UTF_8);
             buffReader = new BufferedReader(inputStreamReader);
             String line;
             StringBuilder strBuilder = new StringBuilder();
             while ((line = buffReader.readLine()) != null) {
-                strBuilder.append(line);
+                strBuilder.append(line + "\n");
             }
             return strBuilder.toString();
         } catch (Exception e) {
-            //log.error(e.getMessage());
+            // log.error(e.getMessage());
         } finally {
             try {
                 if (buffReader != null) {
@@ -209,7 +204,43 @@ public final class HandleVersion {
                     inputStreamReader.close();
                 }
             } catch (IOException e) {
-                //log.error(e.getMessage());
+                // log.error(e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public static String getDiffData(String ip, int oldVer) {
+        String path = INIT_PATH;
+
+        InputStreamReader inputStreamReader = null;
+        BufferedReader buffReader = null;
+        try {
+            inputStreamReader = new InputStreamReader(new FileInputStream(path + "/" + ip + ".json"),
+                    StandardCharsets.UTF_8);
+            buffReader = new BufferedReader(inputStreamReader);
+            String line;
+            StringBuilder strBuilder = new StringBuilder();
+            int numRow = 0;
+            while ((line = buffReader.readLine()) != null) {
+                numRow++;
+                if (numRow > oldVer) {
+                    strBuilder.append(line + "\n");
+                }
+            }
+            return strBuilder.toString();
+        } catch (IOException e) {
+            // log.error(e.getMessage());
+        } finally {
+            try {
+                if (buffReader != null) {
+                    buffReader.close();
+                }
+                if (inputStreamReader != null) {
+                    inputStreamReader.close();
+                }
+            } catch (IOException e) {
+                // log.error(e.getMessage());
             }
         }
         return null;
@@ -217,14 +248,13 @@ public final class HandleVersion {
 
     public static InforControllerModel getLocal() {
         InforControllerModel infor = null;
-        String path = System.getProperty("java.io.tmpdir");
+        String path = INIT_PATH;
 
         InputStreamReader inputStreamReader = null;
         BufferedReader buffReader = null;
         try {
-            inputStreamReader = new InputStreamReader(
-                new FileInputStream(path + "/listip.json"), StandardCharsets.UTF_8
-            );
+            inputStreamReader = new InputStreamReader(new FileInputStream(path + "/listip.json"),
+                    StandardCharsets.UTF_8);
             buffReader = new BufferedReader(inputStreamReader);
             String line;
 
@@ -241,7 +271,7 @@ public final class HandleVersion {
             infor.setIp(localIp);
             infor.setKindController(kindController);
         } catch (Exception e) {
-            //log.error(e.getMessage());
+            // log.error(e.getMessage());
         } finally {
             try {
                 if (buffReader != null) {
@@ -251,7 +281,7 @@ public final class HandleVersion {
                     inputStreamReader.close();
                 }
             } catch (IOException e) {
-                //log.error(e.getMessage());
+                // log.error(e.getMessage());
             }
         }
         return infor;
@@ -260,14 +290,13 @@ public final class HandleVersion {
     public static ArrayList<InforControllerModel> getMembers() {
         ArrayList<InforControllerModel> mems = new ArrayList<>();
 
-        String path = System.getProperty("java.io.tmpdir");
+        String path = INIT_PATH;
 
         InputStreamReader inputStreamReader = null;
         BufferedReader buffReader = null;
         try {
-            inputStreamReader = new InputStreamReader(
-                new FileInputStream(path + "/listip.json"), StandardCharsets.UTF_8
-            );
+            inputStreamReader = new InputStreamReader(new FileInputStream(path + "/listip.json"),
+                    StandardCharsets.UTF_8);
             buffReader = new BufferedReader(inputStreamReader);
             String line;
 
@@ -293,7 +322,7 @@ public final class HandleVersion {
                 mems.add(model);
             }
         } catch (Exception e) {
-            //log.error(e.getMessage());
+            // log.error(e.getMessage());
         } finally {
             try {
                 if (buffReader != null) {
@@ -303,21 +332,20 @@ public final class HandleVersion {
                     inputStreamReader.close();
                 }
             } catch (IOException e) {
-                //log.error(e.getMessage());
+                // log.error(e.getMessage());
             }
         }
         return mems;
     }
 
     public static String getKindController(String ip) {
-        String path = System.getProperty("java.io.tmpdir");
+        String path = INIT_PATH;
 
         InputStreamReader inputStreamReader = null;
         BufferedReader buffReader = null;
         try {
-            inputStreamReader = new InputStreamReader(
-                new FileInputStream(path + "/listip.json"), StandardCharsets.UTF_8
-            );
+            inputStreamReader = new InputStreamReader(new FileInputStream(path + "/listip.json"),
+                    StandardCharsets.UTF_8);
             buffReader = new BufferedReader(inputStreamReader);
             String line;
 
@@ -340,7 +368,7 @@ public final class HandleVersion {
                 }
             }
         } catch (Exception e) {
-            //log.error(e.getMessage());
+            // log.error(e.getMessage());
         } finally {
             try {
                 if (buffReader != null) {
@@ -350,9 +378,40 @@ public final class HandleVersion {
                     inputStreamReader.close();
                 }
             } catch (IOException e) {
-                //log.error(e.getMessage());
+                // log.error(e.getMessage());
             }
         }
         return null;
+    }
+
+    public static int countRowData(String ip) {
+        String path = INIT_PATH;
+
+        InputStreamReader inputStreamReader = null;
+        BufferedReader buffReader = null;
+        try {
+            inputStreamReader = new InputStreamReader(new FileInputStream(path + "/" + ip + ".json"),
+                    StandardCharsets.UTF_8);
+            buffReader = new BufferedReader(inputStreamReader);
+            int lines = 0;
+            while (buffReader.readLine() != null) {
+                lines++;
+            }
+            return lines;
+        } catch (Exception e) {
+            // log.error(e.getMessage());
+        } finally {
+            try {
+                if (buffReader != null) {
+                    buffReader.close();
+                }
+                if (inputStreamReader != null) {
+                    inputStreamReader.close();
+                }
+            } catch (IOException e) {
+                // log.error(e.getMessage());
+            }
+        }
+        return 0;
     }
 }

@@ -314,11 +314,11 @@ public class KcsgListenerManager {
                 try {
                     String path = System.getProperty("java.io.tmpdir");
                     outputStreamWriter = new OutputStreamWriter(
-                        new FileOutputStream(path + "/" + updateData.getIp() + ".json", false),
+                        new FileOutputStream(path + "/" + updateData.getIp() + ".json", true),
                         StandardCharsets.UTF_8
                     );
                     bufferWriter = new BufferedWriter(outputStreamWriter);
-                    bufferWriter.write(updateData.getData());
+                    bufferWriter.append(updateData.getData());
                     log.info("update success data from ip:" + updateData.getIp());
                 } catch (IOException e) {
                     log.error("Error when write data file");
@@ -357,24 +357,21 @@ public class KcsgListenerManager {
             InforControllerModel mem = KcsgListenerManager.memberList.get(index);
             KcsgListenerManager.memberList.remove(index);
 
-            String jsonVer = HandleVersion.getVersions();
+            String strVer = HandleVersion.getVersions();
             if (mem == null || mem.getIp() == null || mem.getKindController() == null) {
                 return;
             }
             switch (mem.getKindController()) {
                 case "ONOS": {
-                    Unirest.setTimeouts(0, 0);
                     try {
                         // JSONObject contentComp = new JSONObject();
                         // contentComp.put("ver", jsonVer);
 
                         // log.info(contentComp.toString());
                         HttpResponse<String> response = Unirest
-                            .post("http://" + mem.getIp() + ":8181/onos/kcsg/communicate/compareVersions")
-                            .header("Content-Type", "application/json")
-                            .header("Accept", "application/json")
-                            .header("Authorization", "Basic a2FyYWY6a2FyYWY=")
-                            .body(jsonVer).asString();
+                                .post("http://" + mem.getIp() + ":8181/onos/kcsg/communicate/compareVersions")
+                                .header("Content-Type", "application/json").header("Accept", "application/json")
+                                .header("Authorization", "Basic a2FyYWY6a2FyYWY=").body(strVer).asString();
                         if (response.getStatus() == 200) {
                             String body = response.getBody();
                             JSONArray datas = new JSONArray();
@@ -382,23 +379,25 @@ public class KcsgListenerManager {
 
                             int len = arr.length();
                             for (int i = 0; i < len; i++) {
-                                String ip = arr.getString(i);
-                                int ver = HandleVersion.getVersion(ip);
-                                String data = HandleVersion.getData(ip);
+                                JSONObject resVerModel = arr.getJSONObject(i);
+                                String resIp = resVerModel.getString("ip");
+                                int resVer = resVerModel.getInt("ver");
+
+                                int ver = HandleVersion.getVersion(resIp);
+                                String data = HandleVersion.getDiffData(resIp, resVer);
 
                                 JSONObject json = new JSONObject();
-                                json.put("ip", ip);
+                                json.put("ip", resIp);
                                 json.put("ver", ver);
                                 json.put("data", data);
                                 datas.put(json);
                             }
                             if (len > 0) {
                                 HttpResponse<String> resUpdateData = Unirest
-                                    .put("http://" + mem.getIp() + ":8181/onos/kcsg/communicate/updateNewLog")
-                                    .header("Content-Type", "application/json")
-                                    .header("Accept", "application/json")
-                                    .header("Authorization", "Basic a2FyYWY6a2FyYWY=")
-                                    .body(datas.toString()).asString();
+                                        .put("http://" + mem.getIp() + ":8181/onos/kcsg/communicate/updateNewLog")
+                                        .header("Content-Type", "application/json").header("Accept", "application/json")
+                                        .header("Authorization", "Basic a2FyYWY6a2FyYWY=").body(datas.toString())
+                                        .asString();
                                 if (resUpdateData.getStatus() == 200) {
                                     log.info("send update data success");
                                 } else {
@@ -417,13 +416,12 @@ public class KcsgListenerManager {
                     log.info("http://" + mem.getIp() + ":8080/faucet/sina/versions/get-new");
                     String url = "http://" + mem.getIp() + ":8080/faucet/sina/versions/get-new";
 
-                    Unirest.setTimeouts(0, 0);
                     try {
                         HttpResponse<String> response = Unirest.post(url)
                                 .header("Content-Type", "application/json")
                                 .header("Accept", "application/json")
                                 .header("Authorization", "Basic a2FyYWY6a2FyYWY=")
-                                .body(jsonVer).asString();
+                                .body(strVer).asString();
                         if (response.getStatus() == 200) {
                             String body = response.getBody();
                             log.info("BODY: " + body);
@@ -465,13 +463,63 @@ public class KcsgListenerManager {
                     break;
                 }
                 case "ODL": {
-                    String url = "http://" + mem.getIp() + ":8181/restconf/operations/kcsg:compareVersions";
-
-                    Unirest.setTimeouts(0, 0);
                     try {
-                        HttpResponse<String> response = Unirest.post(url).header("Content-Type", "application/json")
-                                .header("Accept", "application/json").header("Authorization", "Basic YWRtaW46YWRtaW4=")
-                                .body(jsonVer).asString();
+                        JSONObject bodyComp = new JSONObject();
+                        JSONObject verData = new JSONObject();
+                        verData.put("data", strVer);
+                        bodyComp.put("input", verData);
+
+                        HttpResponse<String> response = Unirest
+                                .post("http://" + mem.getIp() + ":8181/restconf/operations/sina:compareVersions")
+                                .header("Content-Type", "application/json").header("Accept", "application/json")
+                                .header("Authorization", "Basic YWRtaW46YWRtaW4=").body(bodyComp).asString();
+                        if (response.getStatus() == 200) {
+                            String resBody = response.getBody();
+                            log.info("res compare versions body: " + resBody);
+
+                            //{"output":{"ips":"[\"192.168.50.137\"]"}}
+                            JSONObject resObj = new JSONObject(resBody);
+                            JSONObject output = resObj.getJSONObject("output");
+                            //chu y ips la kieu string khong phai array
+                            JSONArray arr = new JSONArray(output.getString("ips"));
+
+                            JSONArray datas = new JSONArray();
+                            int len = arr.length();
+                            for (int i = 0; i < len; i++) {
+                                JSONObject resVerModel = arr.getJSONObject(i);
+                                String resIp = resVerModel.getString("ip");
+                                int resVer = resVerModel.getInt("ver");
+
+                                int ver = HandleVersion.getVersion(resIp);
+                                String data = HandleVersion.getDiffData(resIp, resVer);
+
+                                JSONObject json = new JSONObject();
+                                json.put("ip", resIp);
+                                json.put("ver", ver);
+                                json.put("data", data);
+                                datas.put(json);
+                            }
+
+                            //LOG.info("datas " + datas.toString());
+                            if (len > 0) {
+                                JSONObject bodyUpdate = new JSONObject();
+                                JSONObject dataUpdate = new JSONObject();
+                                dataUpdate.put("data", datas.toString());
+                                bodyUpdate.put("input", dataUpdate);
+
+                                HttpResponse<String> resUpdateData = Unirest
+                                        .post("http://" + mem.getIp() + ":8181/restconf/operations/sina:updateNewData")
+                                        .header("Content-Type", "application/json").header("Accept", "application/json")
+                                        .header("Authorization", "Basic YWRtaW46YWRtaW4=").body(bodyUpdate).asString();
+                                if (resUpdateData.getStatus() == 200) {
+                                    log.info("res update data body: " + resUpdateData.getBody());
+                                } else {
+                                    log.warn("send update data fail with status code: " + resUpdateData.getStatus());
+                                }
+                            }
+                        } else {
+                            log.warn("compare version with status code: " + response.getStatus());
+                        }
                     } catch (Exception e) {
                         log.error(e.getMessage());
                     }

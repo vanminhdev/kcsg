@@ -380,19 +380,18 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
             SinaProvider.MEMBER_LIST.remove(index);
 
             String strVer = HandleVersion.getVersions();
-            if (mem == null || mem.ip == null || mem.kindController == null) {
+            if (mem == null || mem.getIp() == null || mem.getKindController() == null) {
                 return;
             }
-            switch (mem.kindController) {
+            switch (mem.getKindController()) {
                 case "ONOS": {
-                    Unirest.setTimeouts(0, 0);
                     try {
                         // JSONObject contentComp = new JSONObject();
                         // contentComp.put("ver", jsonVer);
 
                         // log.info(contentComp.toString());
                         HttpResponse<String> response = Unirest
-                                .post("http://" + mem.ip + ":8181/onos/kcsg/communicate/compareVersions")
+                                .post("http://" + mem.getIp() + ":8181/onos/kcsg/communicate/compareVersions")
                                 .header("Content-Type", "application/json").header("Accept", "application/json")
                                 .header("Authorization", "Basic a2FyYWY6a2FyYWY=").body(strVer).asString();
                         if (response.getStatus() == 200) {
@@ -402,19 +401,22 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
 
                             int len = arr.length();
                             for (int i = 0; i < len; i++) {
-                                String ip = arr.getString(i);
-                                int ver = HandleVersion.getVersion(ip);
-                                String data = HandleVersion.getData(ip);
+                                JSONObject resVerModel = arr.getJSONObject(i);
+                                String resIp = resVerModel.getString("ip");
+                                int resVer = resVerModel.getInt("ver");
+
+                                int ver = HandleVersion.getVersion(resIp);
+                                String data = HandleVersion.getDiffData(resIp, resVer);
 
                                 JSONObject json = new JSONObject();
-                                json.put("ip", ip);
+                                json.put("ip", resIp);
                                 json.put("ver", ver);
                                 json.put("data", data);
                                 datas.put(json);
                             }
                             if (len > 0) {
                                 HttpResponse<String> resUpdateData = Unirest
-                                        .put("http://" + mem.ip + ":8181/onos/kcsg/communicate/updateNewLog")
+                                        .put("http://" + mem.getIp() + ":8181/onos/kcsg/communicate/updateNewLog")
                                         .header("Content-Type", "application/json").header("Accept", "application/json")
                                         .header("Authorization", "Basic a2FyYWY6a2FyYWY=").body(datas.toString())
                                         .asString();
@@ -428,15 +430,16 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
                             LOG.warn("compare version with status code: " + response.getStatus());
                         }
                     } catch (UnirestException e) {
-                        LOG.error(e.getMessage(), e);
+                        LOG.error(e.getMessage());
+                    } catch (JSONException e) {
+                        LOG.error(e.getMessage());
                     }
                     break;
                 }
                 case "Faucet": {
-                    LOG.info("http://" + mem.ip + ":8080/faucet/sina/versions/get-new");
-                    String url = "http://" + mem.ip + ":8080/faucet/sina/versions/get-new";
+                    LOG.info("http://" + mem.getIp() + ":8080/faucet/sina/versions/get-new");
+                    String url = "http://" + mem.getIp() + ":8080/faucet/sina/versions/get-new";
 
-                    Unirest.setTimeouts(0, 0);
                     try {
                         HttpResponse<String> response = Unirest.post(url).header("Content-Type", "application/json")
                                 .header("Accept", "application/json").header("Authorization", "Basic a2FyYWY6a2FyYWY=")
@@ -460,9 +463,9 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
                                 datas.put(json);
                             }
                             if (len > 0) {
-                                LOG.info("http://" + mem.ip + ":8080/faucet/sina/log/update");
+                                LOG.info("http://" + mem.getIp() + ":8080/faucet/sina/log/update");
                                 HttpResponse<String> resUpdateData = Unirest
-                                        .post("http://" + mem.ip + ":8080/faucet/sina/log/update")
+                                        .post("http://" + mem.getIp() + ":8080/faucet/sina/log/update")
                                         .header("Content-Type", "application/json").header("Accept", "application/json")
                                         .header("Authorization", "Basic a2FyYWY6a2FyYWY=").body(datas.toString())
                                         .asString();
@@ -477,11 +480,12 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
                         }
                     } catch (UnirestException e) {
                         LOG.error(e.getMessage());
+                    } catch (JSONException e) {
+                        LOG.error(e.getMessage());
                     }
                     break;
                 }
                 case "ODL": {
-                    Unirest.setTimeouts(0, 0);
                     try {
                         JSONObject bodyComp = new JSONObject();
                         JSONObject verData = new JSONObject();
@@ -489,7 +493,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
                         bodyComp.put("input", verData);
 
                         HttpResponse<String> response = Unirest
-                                .post("http://" + mem.ip + ":8181/restconf/operations/sina:compareVersions")
+                                .post("http://" + mem.getIp() + ":8181/restconf/operations/sina:compareVersions")
                                 .header("Content-Type", "application/json").header("Accept", "application/json")
                                 .header("Authorization", "Basic YWRtaW46YWRtaW4=").body(bodyComp).asString();
                         if (response.getStatus() == 200) {
@@ -527,7 +531,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
                                 bodyUpdate.put("input", dataUpdate);
 
                                 HttpResponse<String> resUpdateData = Unirest
-                                        .post("http://" + mem.ip + ":8181/restconf/operations/sina:updateNewData")
+                                        .post("http://" + mem.getIp() + ":8181/restconf/operations/sina:updateNewData")
                                         .header("Content-Type", "application/json").header("Accept", "application/json")
                                         .header("Authorization", "Basic YWRtaW46YWRtaW4=").body(bodyUpdate).asString();
                                 if (resUpdateData.getStatus() == 200) {
