@@ -644,6 +644,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
             int currVer = HandleVersion.getVersion(item.getIp());
             // hien tai nho hon gui toi => can update
             if (currVer < item.getVer()) {
+                item.setVer(currVer);
                 ips.add(item);
             }
             // ips.add(item.ip);
