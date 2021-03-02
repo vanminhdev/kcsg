@@ -61,3 +61,4 @@ D:\Code\SDN\kcsg\ApiWriteLog\KcsWriteLog\obj\Release\netcoreapp3.1\KcsWriteLog.c
 D:\Code\SDN\kcsg\ApiWriteLog\KcsWriteLog\obj\Release\netcoreapp3.1\KcsWriteLog.dll
 D:\Code\SDN\kcsg\ApiWriteLog\KcsWriteLog\obj\Release\netcoreapp3.1\KcsWriteLog.pdb
 D:\Code\SDN\kcsg\ApiWriteLog\KcsWriteLog\obj\Release\netcoreapp3.1\KcsWriteLog.genruntimeconfig.cache
+D:\Code\SDN\kcsg\ApiWriteLog\KcsWriteLog\bin\Release\netcoreapp3.1\System.Text.Json.dll

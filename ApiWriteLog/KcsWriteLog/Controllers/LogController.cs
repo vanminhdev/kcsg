@@ -28,10 +28,6 @@ namespace KcsWriteLog.Controllers
         {
             try
             {
-                if (string.IsNullOrEmpty(model.ip))
-                {
-                    model.ip = HttpContext.Connection.RemoteIpAddress.ToString();
-                }
                 await _activityLogService.WriteLog(model);
                 return Ok();
             }

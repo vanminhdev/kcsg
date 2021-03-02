@@ -22,7 +22,8 @@ namespace KcsWriteLog.Services.Implements
                 var data = new ActivityLog()
                 {
                     EntryTime = DateTime.Now,
-                    IpUpdate = model.ip,
+                    IpUpdate = model.ipReceiver,
+                    IpFrom = model.ipSender,
                     TimeUpdate = model.time,
                     VersionUpdate = model.version
                 };

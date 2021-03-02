@@ -34,6 +34,7 @@ namespace KcsWriteLog
             );
 
             services.AddScoped<IActivityLogService, ActivityLogService>();
+            services.AddScoped<IRemoteIpService, RemoteIpService>();
             services.AddControllers();
         }
 

@@ -7,7 +7,8 @@ namespace KcsWriteLog.Models.Request
 {
     public class LogModel
     {
-        public string ip { get; set; }
+        public string ipSender { get; set; }
+        public string ipReceiver { get; set; }
         public DateTime time { get; set; }
         public int version { get; set; }
     }

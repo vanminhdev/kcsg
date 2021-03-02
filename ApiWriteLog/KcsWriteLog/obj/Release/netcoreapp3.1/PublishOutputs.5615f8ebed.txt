@@ -32,6 +32,7 @@ D:\Code\SDN\kcsg\ApiWriteLog\KcsWriteLog\obj\Release\netcoreapp3.1\PubTmp\Out\Sy
 D:\Code\SDN\kcsg\ApiWriteLog\KcsWriteLog\obj\Release\netcoreapp3.1\PubTmp\Out\System.IdentityModel.Tokens.Jwt.dll
 D:\Code\SDN\kcsg\ApiWriteLog\KcsWriteLog\obj\Release\netcoreapp3.1\PubTmp\Out\System.Runtime.Caching.dll
 D:\Code\SDN\kcsg\ApiWriteLog\KcsWriteLog\obj\Release\netcoreapp3.1\PubTmp\Out\System.Security.Cryptography.ProtectedData.dll
+D:\Code\SDN\kcsg\ApiWriteLog\KcsWriteLog\obj\Release\netcoreapp3.1\PubTmp\Out\System.Text.Json.dll
 D:\Code\SDN\kcsg\ApiWriteLog\KcsWriteLog\obj\Release\netcoreapp3.1\PubTmp\Out\runtimes\unix\lib\netcoreapp3.1\Microsoft.Data.SqlClient.dll
 D:\Code\SDN\kcsg\ApiWriteLog\KcsWriteLog\obj\Release\netcoreapp3.1\PubTmp\Out\runtimes\win\lib\netcoreapp3.1\Microsoft.Data.SqlClient.dll
 D:\Code\SDN\kcsg\ApiWriteLog\KcsWriteLog\obj\Release\netcoreapp3.1\PubTmp\Out\runtimes\win-arm\native\Microsoft.Data.SqlClient.SNI.dll
