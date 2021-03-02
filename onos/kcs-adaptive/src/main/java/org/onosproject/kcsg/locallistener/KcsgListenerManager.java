@@ -110,33 +110,57 @@ public class KcsgListenerManager {
     }
 
     private void init() {
-        //create listip.json
+        serverUrl = HandleVersion.getServerUrl();
+        String path = INIT_PATH;
+        path = path + "/listip.json";
+        FileOutputStream fos = null;
+        OutputStreamWriter wrt = null;
         try {
-            String path = INIT_PATH;
-            path = path + "/listip.json";
+            fos = new FileOutputStream(path);
+            wrt = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
+
             File f = new File(path);
-            if (!f.exists()) {
-                FileOutputStream fos = new FileOutputStream(path);
-                OutputStreamWriter wrt = new OutputStreamWriter(fos);
-                wrt.write("{\n" + "\t\"localIp\": \"192.168.31.230\",\n"
-                    + "\t\"controller\": \"ONOS\", \n"
-                    + "\t\"communication\": [\n"
-                    + "\t\t{\n"
-                    + "\t\t\t\"ip\": \"192.168.50.131\", \n"
-                    + "\t\t\t\"controller\": \"ONOS\"\n"
-                    + "\t\t},\n"
-                    + "\t\t{\n"
-                    + "\t\t\t\"ip\": \"192.168.50.131\", \n"
-                    + "\t\t\t\"controller\": \"ONOS\"\n"
-                    + "\t\t}\n"
-                    + "\t],\n"
-                    + "\t\"serverUrl\": \"http://192.168.43.176:8085\"\n"
-                    + "}");
-                wrt.close();
-                fos.close();
+
+            try {
+                HttpResponse<String> response = Unirest
+                .get(serverUrl + "/api/remoteIp/list-ip")
+                .header("Content-Type", "application/json")
+                .header("Accept", "application/json")
+                .asString();
+
+                if (response.getStatus() == 200) {
+                    wrt.write(response.getBody());
+                }
+            } catch (UnirestException e) {
+                if (!f.exists()) {
+                    wrt.write("{\n" + "\t\"localIp\": \"...\",\n"
+                        + "\t\"controller\": \"...\", \n"
+                        + "\t\"communication\": [\n"
+                        + "\t\t{\n"
+                        + "\t\t\t\"ip\": \"...\", \n"
+                        + "\t\t\t\"controller\": \"...\"\n"
+                        + "\t\t},\n"
+                        + "\t\t{\n"
+                        + "\t\t\t\"ip\": \"...\", \n"
+                        + "\t\t\t\"controller\": \"...\"\n"
+                        + "\t\t}\n"
+                        + "\t]"
+                        + "}");
+                }
             }
         } catch (IOException e) {
             log.error("Error when create file listip.json");
+        } finally {
+            try {
+                if (wrt != null) {
+                    wrt.close();
+                }
+                if (fos != null) {
+                    fos.close();
+                }
+            } catch (IOException e) {
+                log.error("Error when close write file listip");
+            }
         }
         //create version.json
         HandleVersion.createVersion();
@@ -144,8 +168,8 @@ public class KcsgListenerManager {
         if (local != null) {
             myIpAddress = local.getIp();
         }
-        serverUrl = HandleVersion.getServerUrl();
         log.info("myIp :" + myIpAddress + " serverUrl: " + serverUrl);
+
         int initCount = HandleVersion.countRowData(myIpAddress);
         countRowOld = initCount;
         countRowNew = initCount;

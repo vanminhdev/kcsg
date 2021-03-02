@@ -23,6 +23,7 @@ import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.slf4j.Logger;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -37,6 +38,7 @@ import java.util.TimerTask;
 
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -48,6 +50,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 @Component(immediate = true)
 public class KcsgListenerManager {
     private final Logger log = getLogger(getClass());
+    private static final String INIT_PATH = "/home/onos/sdn";
 
     public static boolean lockFlag = false;
     public static Queue<String> loggingQueue = new LinkedList<>();
@@ -69,6 +72,7 @@ public class KcsgListenerManager {
 
     public static final String PROVIDER_NAME = "org.onosproject.kcsg.listener";
     public static String myIpAddress = null;
+    public static String serverUrl = null;
 
     private final LocalDeviceListener deviceListener = new LocalDeviceListener();
     private final LocalHostListener hostListener = new LocalHostListener();
@@ -82,7 +86,6 @@ public class KcsgListenerManager {
         linkService.addListener(linkListener);
         hostService.addListener(hostListener);
         log.info("Started kcsg");
-        myIpAddress = "192.168.50.131";
         init();
         scheduleWriteLogChange();
         scheduleUpdateData();
@@ -94,40 +97,69 @@ public class KcsgListenerManager {
         deviceService.removeListener(deviceListener);
         linkService.removeListener(linkListener);
         hostService.removeListener(hostListener);
-
         log.info("Stopped kcsg");
     }
 
     private void init() {
-        //create listip.json
+        serverUrl = HandleVersion.getServerUrl();
+        String path = INIT_PATH;
+        path = path + "/listip.json";
+        FileOutputStream fos = null;
+        OutputStreamWriter wrt = null;
         try {
-            String path = System.getProperty("java.io.tmpdir");
-            path = path + "/listip.json";
-            FileOutputStream fos = new FileOutputStream(path);
+            fos = new FileOutputStream(path);
+            wrt = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
 
-            OutputStreamWriter wrt = new OutputStreamWriter(fos);
+            File f = new File(path);
 
-            wrt.write("{\n" + "\t\"localIp\": \"" + myIpAddress
-                    + "\",\n"
-                    + "\t\"controller\": \"ONOS\", \n"
-                    + "\t\"communication\": [\n"
-                    + "\t\t{\n"
-                    + "\t\t\t\"ip\": \"192.168.50.131\", \n"
-                    + "\t\t\t\"controller\": \"ONOS\"\n"
-                    + "\t\t}, \n"
-                    + "\t\t{\n"
-                    + "\t\t\t\"ip\": \"192.168.50.131\", \n"
-                    + "\t\t\t\"controller\": \"ONOS\"\n"
-                    + "\t\t}\n"
-                    + "\t]\n"
-                    + "}");
-            wrt.close();
-            fos.close();
+            try {
+                HttpResponse<String> response = Unirest
+                .get(serverUrl + "/api/remoteIp/list-ip")
+                .header("Content-Type", "application/json")
+                .header("Accept", "application/json")
+                .asString();
+
+                if (response.getStatus() == 200) {
+                    wrt.write(response.getBody());
+                }
+            } catch (UnirestException e) {
+                if (!f.exists()) {
+                    wrt.write("{\n" + "\t\"localIp\": \"...\",\n"
+                        + "\t\"controller\": \"...\", \n"
+                        + "\t\"communication\": [\n"
+                        + "\t\t{\n"
+                        + "\t\t\t\"ip\": \"...\", \n"
+                        + "\t\t\t\"controller\": \"...\"\n"
+                        + "\t\t},\n"
+                        + "\t\t{\n"
+                        + "\t\t\t\"ip\": \"...\", \n"
+                        + "\t\t\t\"controller\": \"...\"\n"
+                        + "\t\t}\n"
+                        + "\t]"
+                        + "}");
+                }
+            }
         } catch (IOException e) {
-            log.info("Error when create file listip.json");
+            log.error("Error when create file listip.json");
+        } finally {
+            try {
+                if (wrt != null) {
+                    wrt.close();
+                }
+                if (fos != null) {
+                    fos.close();
+                }
+            } catch (IOException e) {
+                log.error("Error when close write file listip");
+            }
         }
         //create version.json
         HandleVersion.createVersion();
+        var local = HandleVersion.getLocal();
+        if (local != null) {
+            myIpAddress = local.getIp();
+        }
+        log.info("myIp :" + myIpAddress + " serverUrl: " + serverUrl);
     }
 
     private class LocalDeviceListener implements DeviceListener {
@@ -232,15 +264,29 @@ public class KcsgListenerManager {
                 int ver = HandleVersion.getVersion(myIpAddress);
                 HandleVersion.setVersion(myIpAddress, ++ver);
 
-                String path = System.getProperty("java.io.tmpdir");
+                String path = INIT_PATH;
                 outputStreamWriter = new OutputStreamWriter(
                     new FileOutputStream(path + "/" + myIpAddress + ".json", true),
                     StandardCharsets.UTF_8
                 );
                 bufferWriter = new BufferedWriter(outputStreamWriter);
                 bufferWriter.append(strLog);
-            } catch (Exception e) {
+
+                JSONObject bodyReq = new JSONObject();
+                bodyReq.put("ipSender", myIpAddress);
+                bodyReq.put("ipReceiver", myIpAddress);
+                bodyReq.put("time", java.time.LocalDateTime.now());
+                bodyReq.put("version", HandleVersion.getVersion(myIpAddress));
+
+                HttpResponse<String> response = Unirest
+                    .post(serverUrl + "/api/log/write")
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .body(bodyReq).asString();
+            } catch (IOException e) {
                 log.error("Error when write change log file");
+            } catch (UnirestException e) {
+                log.error("Error when call server");
             } finally {
                 // unlock
                 KcsgListenerManager.lockFlag = false;
@@ -288,7 +334,7 @@ public class KcsgListenerManager {
                 Writer outputStreamWriter = null;
                 BufferedWriter bufferWriter = null;
                 try {
-                    String path = System.getProperty("java.io.tmpdir");
+                    String path = INIT_PATH;
                     outputStreamWriter = new OutputStreamWriter(
                         new FileOutputStream(path + "/" + updateData.getIp() + ".json", true),
                         StandardCharsets.UTF_8
@@ -296,8 +342,22 @@ public class KcsgListenerManager {
                     bufferWriter = new BufferedWriter(outputStreamWriter);
                     bufferWriter.append(updateData.getData());
                     log.info("update success data from ip:" + updateData.getIp());
+
+                    JSONObject bodyReq = new JSONObject();
+                    bodyReq.put("ipSender", updateData.getIp());
+                    bodyReq.put("ipReceiver", myIpAddress);
+                    bodyReq.put("time", java.time.LocalDateTime.now());
+                    bodyReq.put("version", updateData.getVersion());
+
+                    HttpResponse<String> response = Unirest
+                        .post(serverUrl + "/api/log/write")
+                        .header("Content-Type", "application/json")
+                        .header("Accept", "application/json")
+                        .body(bodyReq).asString();
                 } catch (IOException e) {
                     log.error("Error when write data file");
+                } catch (UnirestException e) {
+                    log.error("Error when call api log time");
                 } finally {
                     try {
                         if (bufferWriter != null) {
