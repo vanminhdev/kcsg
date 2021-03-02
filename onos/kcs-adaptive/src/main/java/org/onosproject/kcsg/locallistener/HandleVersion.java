@@ -16,7 +16,7 @@ import org.json.JSONObject;
 import org.onosproject.kcsg.locallistener.models.InforControllerModel;
 
 public final class HandleVersion {
-    private static final String INIT_PATH = System.getProperty("java.io.tmpdir");
+    private static final String INIT_PATH = "/home/onos/sdn";
 
     private HandleVersion() {}
 
@@ -196,8 +196,11 @@ public final class HandleVersion {
             buffReader = new BufferedReader(inputStreamReader);
             String line;
             StringBuilder strBuilder = new StringBuilder();
+            String prefix = "";
             while ((line = buffReader.readLine()) != null) {
-                strBuilder.append(line + "\n");
+                strBuilder.append(prefix);
+                prefix = "\n";
+                strBuilder.append(line);
             }
             return strBuilder.toString();
         } catch (Exception e) {
@@ -230,10 +233,13 @@ public final class HandleVersion {
             String line;
             StringBuilder strBuilder = new StringBuilder();
             int numRow = 0;
+            String prefix = "";
             while ((line = buffReader.readLine()) != null) {
                 numRow++;
                 if (numRow > oldVer) {
-                    strBuilder.append(line + "\n");
+                    strBuilder.append(prefix);
+                    prefix = "\n";
+                    strBuilder.append(line);
                 }
             }
             return strBuilder.toString();
@@ -294,6 +300,44 @@ public final class HandleVersion {
             }
         }
         return infor;
+    }
+
+    public static String getServerUrl() {
+        String path = INIT_PATH;
+
+        InputStreamReader inputStreamReader = null;
+        BufferedReader buffReader = null;
+        try {
+            inputStreamReader = new InputStreamReader(
+                new FileInputStream(path + "/listip.json"), StandardCharsets.UTF_8
+            );
+            buffReader = new BufferedReader(inputStreamReader);
+            String line;
+
+            StringBuilder listIpBuilder = new StringBuilder();
+
+            while ((line = buffReader.readLine()) != null) {
+                listIpBuilder.append(line);
+            }
+
+            JSONObject object = new JSONObject(listIpBuilder.toString());
+            String serverUrl = object.getString("serverUrl");
+            return serverUrl;
+        } catch (Exception e) {
+            //log.error(e.getMessage());
+        } finally {
+            try {
+                if (buffReader != null) {
+                    buffReader.close();
+                }
+                if (inputStreamReader != null) {
+                    inputStreamReader.close();
+                }
+            } catch (IOException e) {
+                //log.error(e.getMessage());
+            }
+        }
+        return null;
     }
 
     public static ArrayList<InforControllerModel> getMembers() {

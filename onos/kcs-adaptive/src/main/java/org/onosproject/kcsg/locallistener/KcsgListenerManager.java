@@ -23,6 +23,7 @@ import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.slf4j.Logger;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -49,6 +50,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 @Component(immediate = true)
 public class KcsgListenerManager {
     private final Logger log = getLogger(getClass());
+    private static final String INIT_PATH = "/home/onos/sdn";
 
     public static boolean lockFlag = false;
     private static long delaySchedule = 1000;
@@ -79,6 +81,7 @@ public class KcsgListenerManager {
 
     public static final String PROVIDER_NAME = "org.onosproject.kcsg.listener";
     public static String myIpAddress = null;
+    public static String serverUrl = null;
 
     private final LocalDeviceListener deviceListener = new LocalDeviceListener();
     private final LocalHostListener hostListener = new LocalHostListener();
@@ -92,7 +95,6 @@ public class KcsgListenerManager {
         linkService.addListener(linkListener);
         hostService.addListener(hostListener);
         log.info("Started kcsg");
-        myIpAddress = "192.168.43.152";
         init();
         scheduleWriteLogChange();
         scheduleUpdateData();
@@ -104,41 +106,46 @@ public class KcsgListenerManager {
         deviceService.removeListener(deviceListener);
         linkService.removeListener(linkListener);
         hostService.removeListener(hostListener);
-
         log.info("Stopped kcsg");
     }
 
     private void init() {
         //create listip.json
         try {
-            String path = System.getProperty("java.io.tmpdir");
+            String path = INIT_PATH;
             path = path + "/listip.json";
-            FileOutputStream fos = new FileOutputStream(path);
-
-            OutputStreamWriter wrt = new OutputStreamWriter(fos);
-
-            wrt.write("{\n" + "\t\"localIp\": \"" + myIpAddress
-                    + "\",\n"
+            File f = new File(path);
+            if (!f.exists()) {
+                FileOutputStream fos = new FileOutputStream(path);
+                OutputStreamWriter wrt = new OutputStreamWriter(fos);
+                wrt.write("{\n" + "\t\"localIp\": \"192.168.31.230\",\n"
                     + "\t\"controller\": \"ONOS\", \n"
                     + "\t\"communication\": [\n"
                     + "\t\t{\n"
                     + "\t\t\t\"ip\": \"192.168.50.131\", \n"
                     + "\t\t\t\"controller\": \"ONOS\"\n"
-                    + "\t\t}, \n"
+                    + "\t\t},\n"
                     + "\t\t{\n"
                     + "\t\t\t\"ip\": \"192.168.50.131\", \n"
                     + "\t\t\t\"controller\": \"ONOS\"\n"
                     + "\t\t}\n"
-                    + "\t]\n"
+                    + "\t],\n"
+                    + "\t\"serverUrl\": \"http://192.168.43.176:8085\"\n"
                     + "}");
-            wrt.close();
-            fos.close();
+                wrt.close();
+                fos.close();
+            }
         } catch (IOException e) {
-            log.info("Error when create file listip.json");
+            log.error("Error when create file listip.json");
         }
         //create version.json
         HandleVersion.createVersion();
-
+        var local = HandleVersion.getLocal();
+        if (local != null) {
+            myIpAddress = local.getIp();
+        }
+        serverUrl = HandleVersion.getServerUrl();
+        log.info("myIp :" + myIpAddress + " serverUrl: " + serverUrl);
         int initCount = HandleVersion.countRowData(myIpAddress);
         countRowOld = initCount;
         countRowNew = initCount;
@@ -256,7 +263,7 @@ public class KcsgListenerManager {
                 int ver = HandleVersion.getVersion(myIpAddress);
                 HandleVersion.setVersion(myIpAddress, ++ver);
 
-                String path = System.getProperty("java.io.tmpdir");
+                String path = INIT_PATH;
                 outputStreamWriter = new OutputStreamWriter(
                     new FileOutputStream(path + "/" + myIpAddress + ".json", true),
                     StandardCharsets.UTF_8
@@ -271,7 +278,7 @@ public class KcsgListenerManager {
                 bodyReq.put("version", HandleVersion.getVersion(myIpAddress));
 
                 HttpResponse<String> response = Unirest
-                    .post("http://192.168.43.176:8085/api/log/write")
+                    .post(serverUrl + "/api/log/write")
                     .header("Content-Type", "application/json")
                     .header("Accept", "application/json")
                     .body(bodyReq).asString();
@@ -327,7 +334,7 @@ public class KcsgListenerManager {
                 Writer outputStreamWriter = null;
                 BufferedWriter bufferWriter = null;
                 try {
-                    String path = System.getProperty("java.io.tmpdir");
+                    String path = INIT_PATH;
                     outputStreamWriter = new OutputStreamWriter(
                         new FileOutputStream(path + "/" + updateData.getIp() + ".json", true),
                         StandardCharsets.UTF_8
@@ -343,7 +350,7 @@ public class KcsgListenerManager {
                     bodyReq.put("version", updateData.getVersion());
 
                     HttpResponse<String> response = Unirest
-                        .post("http://192.168.43.176:8085/api/log/write")
+                        .post(serverUrl + "/api/log/write")
                         .header("Content-Type", "application/json")
                         .header("Accept", "application/json")
                         .body(bodyReq).asString();
