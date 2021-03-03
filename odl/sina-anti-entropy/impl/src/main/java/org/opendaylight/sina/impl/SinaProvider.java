@@ -632,7 +632,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
             public void run() {
                 handleCommunicate();
             }
-        }, 0, 5000);
+        }, 0, 1000);
     }
 
     @SuppressWarnings(value = { "UC_USELESS_OBJECT", "SLF4J_FORMAT_SHOULD_BE_CONST" })
