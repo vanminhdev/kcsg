@@ -12,5 +12,6 @@ namespace KcsWriteLog.Models
         public long? VersionUpdate { get; set; }
         public DateTime? TimeUpdate { get; set; }
         public DateTime? EntryTime { get; set; }
+        public string IpFrom { get; set; }
     }
 }
