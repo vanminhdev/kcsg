@@ -653,10 +653,11 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
 
         ArrayList<VersionModel> ips = new ArrayList<>();
         for (VersionModel item : versions) {
-            LOG.info("ip :" + item.getIp() + " current ver " + item.getVer());
             int currVer = HandleVersion.getVersion(item.getIp());
+            LOG.info("ip :" + item.getIp() + " current ver " + currVer);
             // hien tai nho hon gui toi => can update
             if (currVer < item.getVer()) {
+                item.setVer(currVer);
                 ips.add(item);
             }
             // ips.add(item.ip);
