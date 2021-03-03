@@ -127,7 +127,7 @@ public class SinaListenerManager {
             fos = new FileOutputStream(path + "/listip.json");
             wrt = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
 
-            File f = new File(path);
+            File f = new File(path + "/listip.json");
 
             try {
                 HttpResponse<String> response = Unirest
@@ -171,6 +171,38 @@ public class SinaListenerManager {
             }
         }
         log.info("serverUrl: " + serverUrl);
+
+        InputStreamReader inputStreamReader2 = null;
+        BufferedReader buffReader2 = null;
+        try {
+            inputStreamReader = new InputStreamReader(
+                new FileInputStream(path + "/listip.json"), StandardCharsets.UTF_8
+            );
+            buffReader2 = new BufferedReader(inputStreamReader2);
+            String line;
+
+            StringBuilder listIpBuilder = new StringBuilder();
+
+            while ((line = buffReader2.readLine()) != null) {
+                listIpBuilder.append(line);
+            }
+
+            JSONObject object = new JSONObject(listIpBuilder.toString());
+            myIpAddress = object.getString("localIp");
+        } catch (Exception e) {
+            //log.error(e.getMessage());
+        } finally {
+            try {
+                if (buffReader2 != null) {
+                    buffReader2.close();
+                }
+                if (inputStreamReader2 != null) {
+                    inputStreamReader2.close();
+                }
+            } catch (IOException e) {
+                //log.error(e.getMessage());
+            }
+        }
     }
 
     private class LocalDeviceListener implements DeviceListener {

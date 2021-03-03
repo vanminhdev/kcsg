@@ -382,7 +382,7 @@ public class KcsgListenerManager {
             public void run() {
                 updateData();
             }
-        }, 0, 150);
+        }, 0, 100);
     }
 
     private void handleCommunicate() {
@@ -576,7 +576,7 @@ public class KcsgListenerManager {
                 public void run() {
                     handleCommunicate();
                 }
-            }, 0, 5000
+            }, 0, 1000
         );
     }
 }
