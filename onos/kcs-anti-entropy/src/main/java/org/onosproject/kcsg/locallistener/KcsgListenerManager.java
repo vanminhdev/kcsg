@@ -53,19 +53,10 @@ public class KcsgListenerManager {
     private static final String INIT_PATH = "/home/onos/sdn";
 
     public static boolean lockFlag = false;
-    private static long delaySchedule = 1000;
-    private static Queue<String> loggingQueue = new LinkedList<>();
+    public static Queue<String> loggingQueue = new LinkedList<>();
     public static Queue<DataUpdateModel> updateDataQueue = new LinkedList<>();
-    private static ArrayList<InforControllerModel> memberList = new ArrayList<>();
 
-    private static double v1 = 0;
-    private static double v2 = 0;
-    private static double v3 = 0;
-    private static double v4 = 0;
-    private static double v5 = 0;
-
-    private static int countRowOld = 0;
-    private static int countRowNew = 0;
+    public static ArrayList<InforControllerModel> memberList = new ArrayList<>();
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected CoreService coreService;
@@ -169,20 +160,6 @@ public class KcsgListenerManager {
             myIpAddress = local.getIp();
         }
         log.info("myIp :" + myIpAddress + " serverUrl: " + serverUrl);
-
-        int initCount = HandleVersion.countRowData(myIpAddress);
-        countRowOld = initCount;
-        countRowNew = initCount;
-
-        double v = 0;
-        if (countRowNew + countRowOld > 0) {
-            v = calDiff(countRowOld, countRowNew);
-        }
-        v1 = v;
-        v2 = v;
-        v3 = v;
-        v4 = v;
-        v5 = v;
     }
 
     private class LocalDeviceListener implements DeviceListener {
@@ -309,7 +286,7 @@ public class KcsgListenerManager {
             } catch (IOException e) {
                 log.error("Error when write change log file");
             } catch (UnirestException e) {
-                log.error("Error when call api log time");
+                log.error("Error when call server");
             } finally {
                 // unlock
                 KcsgListenerManager.lockFlag = false;
@@ -328,8 +305,7 @@ public class KcsgListenerManager {
     }
 
     private void scheduleWriteLogChange() {
-        var timer = new Timer();
-        timer.scheduleAtFixedRate(new TimerTask() {
+        new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
                 writeLogChange();
@@ -477,12 +453,9 @@ public class KcsgListenerManager {
                     String url = "http://" + mem.getIp() + ":8080/faucet/sina/versions/get-new";
 
                     try {
-                        HttpResponse<String> response = Unirest.post(url)
-                                .header("Content-Type", "application/json")
-                                .header("Accept", "application/json")
-                                .header("Authorization", "Basic a2FyYWY6a2FyYWY=")
+                        HttpResponse<String> response = Unirest.post(url).header("Content-Type", "application/json")
+                                .header("Accept", "application/json").header("Authorization", "Basic a2FyYWY6a2FyYWY=")
                                 .body(strVer).asString();
-                        log.info("RES: " + response.getBody() + " | " + response.getStatus());
                         if (response.getStatus() == 200) {
                             String body = response.getBody();
                             log.info("BODY: " + body);
@@ -507,11 +480,10 @@ public class KcsgListenerManager {
                             if (len > 0) {
                                 log.info("http://" + mem.getIp() + ":8080/faucet/sina/log/update");
                                 HttpResponse<String> resUpdateData = Unirest
-                                    .post("http://" + mem.getIp() + ":8080/faucet/sina/log/update")
-                                    .header("Content-Type", "application/json")
-                                    .header("Accept", "application/json")
-                                    .header("Authorization", "Basic a2FyYWY6a2FyYWY=")
-                                    .body(datas.toString()).asString();
+                                        .post("http://" + mem.getIp() + ":8080/faucet/sina/log/update")
+                                        .header("Content-Type", "application/json").header("Accept", "application/json")
+                                        .header("Authorization", "Basic a2FyYWY6a2FyYWY=").body(datas.toString())
+                                        .asString();
                                 if (resUpdateData.getStatus() == 200) {
                                     log.info("send update data success");
                                 } else {
@@ -522,7 +494,7 @@ public class KcsgListenerManager {
                             log.warn("compare version with status code: " + response.getStatus());
                         }
                     } catch (Exception e) {
-                        log.error("CATCH: " + e.getMessage());
+                        log.error(e.getMessage());
                     }
                     break;
                 }
@@ -541,10 +513,10 @@ public class KcsgListenerManager {
                             String resBody = response.getBody();
                             log.info("res compare versions body: " + resBody);
 
-                            //{"output":{"ips":"[\"192.168.50.137\"]"}}
+                            // {"output":{"ips":"[\"192.168.50.137\"]"}}
                             JSONObject resObj = new JSONObject(resBody);
                             JSONObject output = resObj.getJSONObject("output");
-                            //chu y ips la kieu string khong phai array
+                            // chu y ips la kieu string khong phai array
                             JSONArray arr = new JSONArray(output.getString("ips"));
 
                             JSONArray datas = new JSONArray();
@@ -564,7 +536,7 @@ public class KcsgListenerManager {
                                 datas.put(json);
                             }
 
-                            //LOG.info("datas " + datas.toString());
+                            // LOG.info("datas " + datas.toString());
                             if (len > 0) {
                                 JSONObject bodyUpdate = new JSONObject();
                                 JSONObject dataUpdate = new JSONObject();
@@ -597,47 +569,14 @@ public class KcsgListenerManager {
         }
     }
 
-    private double calDiff(int countRowOld, int countRowNew) {
-        return Math.abs(countRowNew - countRowOld) / ((double) (countRowNew + countRowOld));
-    }
-
-    private void calDelayComm() {
-        countRowNew = HandleVersion.countRowData(myIpAddress);
-        if (countRowNew == countRowOld) {
-            return;
-        }
-        v5 = calDiff(countRowOld, countRowNew);
-        double cal = (v1 + v2 + v3 + v4 + v5) / 5.0;
-        log.info(String.format("cal: %f, v1 = %f, v2 = %f, v3 = %f, v4 = %f, v5 = %f",
-            cal, v1, v2, v3, v4, v5));
-        if (cal > 0.6) {
-            delaySchedule = 3000;
-        } else if (cal < 0.4) {
-            delaySchedule = 10000;
-        } else {
-            delaySchedule += 5000;
-        }
-        countRowOld = countRowNew;
-        v1 = v2;
-        v2 = v3;
-        v3 = v4;
-        v4 = v5;
-    }
-
     private void scheduleCommunicate() {
-        final Timer timer = new Timer();
-        timer.schedule(
+        new Timer().scheduleAtFixedRate(
             new TimerTask() {
                 @Override
                 public void run() {
                     handleCommunicate();
-                    timer.cancel();
-                    HandleVersion.countRowData(myIpAddress);
-                    calDelayComm();
-                    log.info("communicate after " + delaySchedule);
-                    scheduleCommunicate();
                 }
-            }, delaySchedule
+            }, 0, 5000
         );
     }
 }

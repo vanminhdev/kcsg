@@ -309,7 +309,7 @@ public final class HandleVersion {
         BufferedReader buffReader = null;
         try {
             inputStreamReader = new InputStreamReader(
-                new FileInputStream(path + "/listip.json"), StandardCharsets.UTF_8
+                new FileInputStream(path + "/config.json"), StandardCharsets.UTF_8
             );
             buffReader = new BufferedReader(inputStreamReader);
             String line;
