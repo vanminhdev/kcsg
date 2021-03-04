@@ -519,12 +519,15 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
 
                             int len = arr.length();
                             for (int i = 0; i < len; i++) {
-                                String ip = arr.getString(i);
-                                int ver = HandleVersion.getVersion(ip);
-                                String data = HandleVersion.getData(ip);
+                                JSONObject resVerModel = arr.getJSONObject(i);
+                                String resIp = resVerModel.getString("ip");
+                                int resVer = resVerModel.getInt("version");
+
+                                int ver = HandleVersion.getVersion(resIp);
+                                String data = HandleVersion.getDiffData(resIp, resVer);
 
                                 JSONObject json = new JSONObject();
-                                json.put("ip", ip);
+                                json.put("ip", resIp);
                                 json.put("version", ver);
                                 json.put("content", data);
                                 datas.put(json);
@@ -653,10 +656,11 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
 
         ArrayList<VersionModel> ips = new ArrayList<>();
         for (VersionModel item : versions) {
-            LOG.info("ip :" + item.getIp() + " current ver " + item.getVer());
             int currVer = HandleVersion.getVersion(item.getIp());
+            LOG.info("ip :" + item.getIp() + " current ver " + currVer);
             // hien tai nho hon gui toi => can update
             if (currVer < item.getVer()) {
+                item.setVer(currVer);
                 ips.add(item);
             }
             // ips.add(item.ip);
