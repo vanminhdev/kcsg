@@ -53,7 +53,8 @@ public class KcsgListenerManager {
     private static final String INIT_PATH = "/home/onos/sdn";
 
     public static boolean lockFlag = false;
-    private static long delaySchedule = 1000;
+    private static int numComm = 1;
+    private static int maxMember = 0;
     private static Queue<String> loggingQueue = new LinkedList<>();
     public static Queue<DataUpdateModel> updateDataQueue = new LinkedList<>();
     private static ArrayList<InforControllerModel> memberList = new ArrayList<>();
@@ -123,12 +124,13 @@ public class KcsgListenerManager {
 
             try {
                 HttpResponse<String> response = Unirest
-                .get(serverUrl + "/api/remoteIp/list-ip")
-                .header("Content-Type", "application/json")
-                .header("Accept", "application/json")
-                .asString();
+                    .get(serverUrl + "/api/remoteIp/list-ip")
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .asString();
 
                 if (response.getStatus() == 200) {
+                    log.info(response.getBody());
                     wrt.write(response.getBody());
                 }
             } catch (UnirestException e) {
@@ -174,6 +176,7 @@ public class KcsgListenerManager {
         countRowOld = initCount;
         countRowNew = initCount;
         memberList = HandleVersion.getMembers();
+        maxMember = memberList.size();
 
         double v = 0;
         if (countRowNew + countRowOld > 0) {
@@ -594,6 +597,7 @@ public class KcsgListenerManager {
                     break;
             }
         } else {
+            log.info("add member");
             KcsgListenerManager.memberList = HandleVersion.getMembers();
         }
     }
@@ -602,7 +606,7 @@ public class KcsgListenerManager {
         return Math.abs(countRowNew - countRowOld) / ((double) (countRowNew + countRowOld));
     }
 
-    private void calDelayComm() {
+    private void calNumComm() {
         countRowNew = HandleVersion.countRowData(myIpAddress);
         if (countRowNew == countRowOld) {
             return;
@@ -612,11 +616,11 @@ public class KcsgListenerManager {
         log.info(String.format("cal: %f, v1 = %f, v2 = %f, v3 = %f, v4 = %f, v5 = %f",
             cal, v1, v2, v3, v4, v5));
         if (cal > 0.6) {
-            delaySchedule = 3000;
+            numComm = maxMember / 2;
         } else if (cal < 0.4) {
-            delaySchedule = 10000;
+            numComm = 1;
         } else {
-            delaySchedule = 5000;
+            numComm = 2;
         }
         countRowOld = countRowNew;
         v1 = v2;
@@ -627,17 +631,17 @@ public class KcsgListenerManager {
 
     private void scheduleCommunicate() {
         final Timer timer = new Timer();
-        timer.schedule(
+        timer.scheduleAtFixedRate(
             new TimerTask() {
                 @Override
                 public void run() {
-                    handleCommunicate();
-                    timer.cancel();
-                    calDelayComm();
-                    log.info("communicate after " + delaySchedule);
-                    scheduleCommunicate();
+                    calNumComm();
+                    log.info("num comm:" + numComm);
+                    for (int i = 0; i < numComm; i++) {
+                        handleCommunicate();
+                    }
                 }
-            }, delaySchedule
+            }, 0, 5000
         );
     }
 }

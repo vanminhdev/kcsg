@@ -84,7 +84,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
     private static final Queue<DataUpdateModel> UPDATE_DATA_QUEUE = new LinkedList<>();
     @SuppressWarnings(value = { "MS_PKGPROTECT" })
     @SuppressFBWarnings(value = { "MS_PKGPROTECT" })
-    private static final ArrayList<InforControllerModel> MEMBER_LIST = new ArrayList<>();
+    private static ArrayList<InforControllerModel> MEMBER_LIST = new ArrayList<>();
     @SuppressWarnings(value = { "MS_PKGPROTECT" })
     @SuppressFBWarnings(value = { "MS_PKGPROTECT" })
     public String myIpAddress = null;
@@ -218,7 +218,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         } catch (IOException e) {
             LOG.error("Error when create file listip.json");
         }
-
+        MEMBER_LIST = HandleVersion.getMembers();
         // create version.json
         HandleVersion.createVersion();
     }
@@ -448,7 +448,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
                     break;
                 }
                 case "Faucet": {
-                    log.info("http://" + mem.getIp() + ":8080/faucet/sina/versions/get-new");
+                    LOG.info("http://" + mem.getIp() + ":8080/faucet/sina/versions/get-new");
                     String url = "http://" + mem.getIp() + ":8080/faucet/sina/versions/get-new";
 
                     try {
@@ -457,10 +457,10 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
                                 .header("Accept", "application/json")
                                 .header("Authorization", "Basic a2FyYWY6a2FyYWY=")
                                 .body(strVer).asString();
-                        log.info("RES: " + response.getBody() + " | " + response.getStatus());
+                        LOG.info("RES: " + response.getBody() + " | " + response.getStatus());
                         if (response.getStatus() == 200) {
                             String body = response.getBody();
-                            log.info("BODY: " + body);
+                            LOG.info("BODY: " + body);
                             JSONArray datas = new JSONArray();
                             JSONArray arr = new JSONArray(body);
 
@@ -480,7 +480,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
                                 datas.put(json);
                             }
                             if (len > 0) {
-                                log.info("http://" + mem.getIp() + ":8080/faucet/sina/log/update");
+                                LOG.info("http://" + mem.getIp() + ":8080/faucet/sina/log/update");
                                 HttpResponse<String> resUpdateData = Unirest
                                     .post("http://" + mem.getIp() + ":8080/faucet/sina/log/update")
                                     .header("Content-Type", "application/json")
@@ -488,16 +488,16 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
                                     .header("Authorization", "Basic a2FyYWY6a2FyYWY=")
                                     .body(datas.toString()).asString();
                                 if (resUpdateData.getStatus() == 200) {
-                                    log.info("send update data success");
+                                    LOG.info("send update data success");
                                 } else {
-                                    log.warn("send update data fail with status code: " + resUpdateData.getStatus());
+                                    LOG.warn("send update data fail with status code: " + resUpdateData.getStatus());
                                 }
                             }
                         } else {
-                            log.warn("compare version with status code: " + response.getStatus());
+                            LOG.warn("compare version with status code: " + response.getStatus());
                         }
                     } catch (Exception e) {
-                        log.error("CATCH: " + e.getMessage());
+                        LOG.error("CATCH: " + e.getMessage());
                     }
                     break;
                 }
@@ -599,7 +599,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         } else if (cal < 0.4) {
             delaySchedule = 10000;
         } else {
-            delaySchedule += 5000;
+            delaySchedule = 5000;
         }
         countRowOld = countRowNew;
         v1 = v2;
@@ -618,7 +618,6 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
                 public void run() {
                     handleCommunicate();
                     timer.cancel();
-                    HandleVersion.countRowData(myIpAddress);
                     calDelayComm();
                     LOG.info("communicate after " + delaySchedule);
                     scheduleCommunicate();
