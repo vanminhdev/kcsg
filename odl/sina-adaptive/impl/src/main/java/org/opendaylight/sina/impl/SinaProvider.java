@@ -100,7 +100,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
     private static int countRowOld = 0;
     private static int countRowNew = 0;
 
-    public static final String INIT_PATH = "/tmp";
+    public static final String INIT_PATH = "/home/onos/sdn";
 
     final InstanceIdentifier<Node> instanceIdentifier = InstanceIdentifier.builder(Nodes.class).child(Node.class)
             .build();
@@ -496,8 +496,10 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
                         } else {
                             LOG.warn("compare version with status code: " + response.getStatus());
                         }
-                    } catch (Exception e) {
-                        LOG.error("CATCH: " + e.getMessage());
+                    } catch (UnirestException e) {
+                        LOG.error(e.getMessage());
+                    } catch (JSONException e) {
+                        LOG.error(e.getMessage());
                     }
                     break;
                 }

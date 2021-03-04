@@ -23,7 +23,7 @@ import org.json.JSONObject;
 import org.opendaylight.sina.impl.models.InforControllerModel;
 
 public final class HandleVersion {
-    private static String INIT_PATH = "/tmp";
+    private static String INIT_PATH = "/home/onos/sdn";
 
     private HandleVersion() {
     }
@@ -204,8 +204,11 @@ public final class HandleVersion {
             buffReader = new BufferedReader(inputStreamReader);
             String line;
             StringBuilder strBuilder = new StringBuilder();
+            String prefix = "";
             while ((line = buffReader.readLine()) != null) {
-                strBuilder.append(line + "\n");
+                strBuilder.append(prefix);
+                prefix = "\n";
+                strBuilder.append(line);
             }
             return strBuilder.toString();
         } catch (IOException e) {
@@ -238,10 +241,13 @@ public final class HandleVersion {
             String line;
             StringBuilder strBuilder = new StringBuilder();
             int numRow = 0;
+            String prefix = "";
             while ((line = buffReader.readLine()) != null) {
                 numRow++;
                 if (numRow > oldVer) {
-                    strBuilder.append(line + "\n");
+                    strBuilder.append(prefix);
+                    prefix = "\n";
+                    strBuilder.append(line);
                 }
             }
             return strBuilder.toString();
