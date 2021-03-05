@@ -1,27 +1,54 @@
 import json
 import logging
 import os
+import pathlib
+import random
 import uuid
 from datetime import datetime
-import random
+from threading import Timer
 
 import requests
 
-from faucet.process_file_queue import ProcessFileQueue, read_json_file, write_json_file, read_txt_file
+from faucet.process_file_queue import ProcessFileQueue, read_json_file, write_append_line_json_file, \
+    read_txt_file_from_line
 
 kinds = {
-        'ONOS': 'ONOS',
-        'Faucet': 'Faucet',
+    'ONOS': 'ONOS',
+    'Faucet': 'Faucet',
+    'ODL': 'ODL'
 }
+
+current_working_dir = str(pathlib.Path().absolute())
+temp_data_dir = current_working_dir + '/tmp/'
+
 
 class Kcs:
     file_path = {
-        'listip': '/tmp/listip.json',
-        'version': '/tmp/version.json'
+        'listip': temp_data_dir + 'listip.json',
+        'version': temp_data_dir + 'version.json',
+        'log': temp_data_dir + 'response_log.txt',
+        'config': current_working_dir + '/config.json',
     }
     local_ip = ''
     member_list = []
     visited_list = []
+    temp_versions = {}
+
+    @staticmethod
+    def start_scan():
+        print('scanning...')
+        Kcs.random_send_notify()
+        Timer(1, Kcs.start_scan).start()
+
+    @staticmethod
+    def write_response_log(status, msg):
+        try:
+            mode = 'a' if os.path.isfile(Kcs.file_path['log']) else 'w+'
+            with open(Kcs.file_path['log'], mode) as f:
+                f.write(str(datetime.now()) + ' | ' + str(status) + ': ' + msg + '\n')
+        except Exception as e:
+            print('write response log got error')
+            logging.error(e)
 
     @staticmethod
     def set_member_list():
@@ -76,35 +103,22 @@ class Kcs:
             data = json.dumps(str(r.text))
             Kcs.set_local_ip()
 
-            local_log_file = '/tmp/' + Kcs.local_ip + '.json'
+            local_log_file = temp_data_dir + Kcs.local_ip + '.json'
             print(local_log_file)
 
-            grab = {'data': {}}
-            ProcessFileQueue.q.put((read_json_file, local_log_file, grab))
-            ProcessFileQueue.q.join()
-
-            content = grab['data']
-            if 'data' not in content:
-                content = {
-                    'data': []
-                }
-
-
-            content_data = list(content['data'])
-            content_data.append({
+            content = {
                 'id': str(uuid.uuid4()),
                 'event_type': event_type,
                 'time': str(datetime.now()),
                 'data': data
-            })
-            content['data'] = content_data
-            print(content)
-            ProcessFileQueue.q.put((write_json_file, local_log_file, content))
+            }
+            ProcessFileQueue.q.put((write_append_line_json_file, local_log_file, json.dumps(content)))
             ProcessFileQueue.q.join()
 
             local_ver = int(Kcs.get_version_by_ip(Kcs.local_ip))
             print(local_ver)
             local_ver += 1
+            Kcs.call_log_api(Kcs.local_ip, Kcs.local_ip, local_ver)
             Kcs.update_version_file([{'ip': Kcs.local_ip, 'version': local_ver}])
 
         except Exception as e:
@@ -131,21 +145,16 @@ class Kcs:
         if not member_index:
             return
         index = random.choice(member_index)
-        node = Kcs.member_list.pop(index)
+        selected_node = Kcs.member_list.pop(index)
 
-        print(node)
+        print(selected_node)
 
-        Kcs.visited_list.append(node)
-        ip = node['ip']
-        kind = node['kind']
+        Kcs.visited_list.append(selected_node)
+        ip = selected_node['ip']
+        kind = selected_node['kind']
 
         try:
-            try:
-                Kcs.send_versions_file(ip, kind)
-            except requests.exceptions.RequestException as e:  # This is the correct syntax
-                print('exception requests: ')
-                logging.error(e)
-
+            Kcs.send_versions_file(ip, kind)
         except Exception as e:
             print('exception: ')
             logging.error(e)
@@ -162,32 +171,68 @@ class Kcs:
         ProcessFileQueue.q.join()
         data = grab['data'] or {}
 
-        if kind == kinds['Faucet']:
-            api = 'http://' + ip + ':8080/faucet/sina/versions/get-new'
-            print(api)
+        api = ''
 
-            send_data = json.dumps(data)
-            print('send_data: ' + send_data)
+        try:
+            if kind == kinds['Faucet']:
+                api = 'http://' + ip + ':8080/faucet/sina/versions/get-new'
+                print(api)
 
-            r = requests.post(url=api, data=send_data, headers=headers)
-            print('r.text: ' + r.text)
-            res = json.loads(r.text)
-            Kcs.send_log_files(ip, res, kind)
-        elif kind == kinds['ONOS']:
-            api = 'http://' + ip + ':8181/onos/kcsg/communicate/compareVersions'
-            print(api)
+                send_data = json.dumps(data)
+                print('send_data: ' + send_data)
+                r = requests.post(url=api, data=send_data, headers=headers)
+                print('r.text: ' + r.text)
+                res = json.loads(r.text)
+                Kcs.send_log_files(ip, res, kind)
+                Kcs.write_response_log(200, ip + ' | ' + api)
+            elif kind == kinds['ONOS']:
+                api = 'http://' + ip + ':8181/onos/kcsg/communicate/compareVersions'
+                print(api)
 
-            send_data = json.dumps(data)
-            print(send_data)
+                send_data = json.dumps(data)
+                print('send_data: ' + send_data)
 
-            r = requests.post(url=api, data=send_data, headers=headers)
-            res = json.loads(r.text)
-            print(res)
-            Kcs.send_log_files(ip, res, kind)
+                r = requests.post(url=api, data=send_data, headers=headers)
+                res = json.loads(r.text)
+                print('res: ' + r.text)
+                Kcs.send_log_files(ip, res, kind)
+                Kcs.write_response_log(200, ip + ' | ' + api)
+            elif kind == kinds['ODL']:
+                headers['Authorization'] = 'Basic YWRtaW46YWRtaW4='
+                api = 'http://' + ip + ':8181/restconf/operations/sina:compareVersions'
+                print(api)
+
+                odl_input = {
+                    'input': {
+                        'data': json.dumps(data)
+                    }
+                }
+                send_data = json.dumps(odl_input)
+                print('send_data: ' + send_data)
+
+                r = requests.post(url=api, data=send_data, headers=headers)
+                res = json.loads(r.text)
+                print('res: ' + r.text)
+
+                output_odl = res['output']
+                ips_odl = []
+                print(output_odl)
+                print('ips' in output_odl)
+                if 'ips' in output_odl:
+                    ips_odl = json.loads(output_odl['ips'])
+                    print('in')
+
+                print(ips_odl)
+                Kcs.send_log_files(ip, ips_odl, kind)
+                Kcs.write_response_log(200, ip + ' | ' + api)
+        except requests.exceptions.RequestException as e:  # This is the correct syntax
+            print('exception requests: ')
+            Kcs.write_response_log(500, ip + ' | ' + api + ' | ' + e.strerror)
+            logging.error(e)
 
     @staticmethod
-    def send_log_files(ip, list_ip, kind):
-        if not list_ip:
+    def send_log_files(ip, list_ip_version, kind):
+        if not list_ip_version:
             return
         print('SENDING_LOG_FILES')
         headers = {'Authorization': 'Basic a2FyYWY6a2FyYWY=',
@@ -200,54 +245,172 @@ class Kcs:
         ProcessFileQueue.q.join()
         versions = grab['data'] or {}
 
-        if kind == kinds['Faucet']:
-            api = 'http://' + ip + ':8080/faucet/sina/log/update'
-            print(api)
+        api = ''
 
-            for ip in list_ip:
-                item = {
-                    'ip': ip,
-                    'content': '',
-                    'version': ''
+        try:
+            if kind == kinds['Faucet']:
+                api = 'http://' + ip + ':8080/faucet/sina/log/update'
+                print(api)
+
+                for info in list_ip_version:
+                    info_ip = info['ip']
+                    info_current_line = info['version']
+
+                    item = {
+                        'ip': info_ip,
+                        'content': '',
+                        'version': ''
+                    }
+
+                    grab = {'data': {}}
+                    ProcessFileQueue.q.put(
+                        (read_txt_file_from_line, temp_data_dir + info_ip + '.json', grab, info_current_line))
+                    ProcessFileQueue.q.join()
+                    content = grab['data'] or ''
+                    print('content: ' + content)
+
+                    item['content'] = content
+                    item['version'] = versions[info_ip]
+                    data.append(item)
+                    print('DATA')
+                    print(data)
+
+                send_data = json.dumps(data)
+                print('send_data')
+                print(send_data)
+                r = requests.post(url=api, data=send_data, headers=headers)
+                print(r.text)
+                Kcs.write_response_log(200, ip + ' | ' + api)
+            elif kind == kinds['ONOS']:
+                api = 'http://' + ip + ':8181/onos/kcsg/communicate/updateNewLog'
+                print(api)
+
+                for info in list_ip_version:
+                    info_ip = info['ip']
+                    info_current_line = info['ver']
+                    print('onos: ' + info_ip + str(info_current_line))
+                    print(info)
+                    item = {
+                        'ip': info_ip,
+                        'data': '',
+                        'ver': ''
+                    }
+
+                    grab = {'data': {}}
+                    ProcessFileQueue.q.put((read_txt_file_from_line, temp_data_dir + info_ip + '.json', grab, info_current_line))
+                    ProcessFileQueue.q.join()
+                    content = grab['data'] or ''
+                    print(content)
+                    item['data'] = content
+                    item['ver'] = versions[info_ip]
+                    data.append(item)
+
+                send_data = json.dumps(data)
+                print('send_data')
+                print(send_data)
+                r = requests.put(url=api, data=send_data, headers=headers)
+                print('result:')
+                print(r)
+                Kcs.write_response_log(200, ip + ' | ' + api)
+            elif kind == kinds['ODL']:
+                headers['Authorization'] = 'Basic YWRtaW46YWRtaW4='
+                api = 'http://' + ip + ':8181/restconf/operations/sina:updateNewData'
+                print(api)
+
+                for info in list_ip_version:
+                    info_ip = info['ip']
+                    info_current_line = info['ver']
+                    print('odl: ' + info_ip + str(info_current_line))
+                    print(info)
+                    item = {
+                        'ip': info_ip,
+                        'data': '',
+                        'ver': ''
+                    }
+
+                    grab = {'data': {}}
+                    ProcessFileQueue.q.put(
+                        (read_txt_file_from_line, temp_data_dir + info_ip + '.json', grab, info_current_line))
+                    ProcessFileQueue.q.join()
+                    content = grab['data'] or ''
+                    print(content)
+                    item['data'] = content
+                    item['ver'] = versions[info_ip]
+                    data.append(item)
+
+                odl_input = {
+                    'input': {
+                        'data': json.dumps(data)
+                    }
                 }
+                send_data = json.dumps(odl_input)
+                print('send_data')
+                print(send_data)
+                r = requests.post(url=api, data=send_data, headers=headers)
+                print('result odl:')
+                print(r)
+                Kcs.write_response_log(200, ip + ' | ' + api)
+        except requests.exceptions.RequestException as e:  # This is the correct syntax
+            print('exception requests: ')
+            Kcs.write_response_log(500, ip + ' | ' + api + ' | ' + e.strerror)
+            logging.error(e)
 
-                grab = {'data': {}}
-                ProcessFileQueue.q.put((read_txt_file, '/tmp/' + ip + '.json', grab))
-                ProcessFileQueue.q.join()
-                content = grab['data'] or ''
-
-                item['content'] = content
-                item['version'] = versions[ip]
-                data.append(item)
-
-            send_data = json.dumps(data)
-            print('send_data')
-            print(send_data)
-            r = requests.post(url=api, data=send_data, headers=headers)
+    @staticmethod
+    def call_log_api(sender_ip, receiver_ip, version):
+        server_url = Kcs.get_server_url()
+        api = server_url + '/api/log/write'
+        send_data = {
+            'ipSender': sender_ip,
+            'ipReceiver': receiver_ip,
+            'time': datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+            'version': version
+        }
+        headers = {"Content-Type": "application/json",
+                   "Accept": "application/json"}
+        print('call_log_api: ' + json.dumps(send_data))
+        try:
+            r = requests.post(url=api, data=json.dumps(send_data), headers=headers)
+            print('r:')
             print(r.text)
-        elif kind == kinds['ONOS']:
-            api = 'http://' + ip + ':8181/onos/kcsg/communicate/updateNewLog'
-            print(api)
+        except requests.exceptions.RequestException as e:  # This is the correct syntax
+            logging.error(e)
 
-            for ip in list_ip:
-                item = {
-                    'ip': ip,
-                    'data': '',
-                    'ver': ''
-                }
+    @staticmethod
+    def init_listip_config():
+        server_url = Kcs.get_server_url()
+        api = server_url + '/api/remoteIp/list-ip'
+        headers = {"Content-Type": "application/json",
+                   "Accept": "application/json"}
+        try:
+            r = requests.get(url=api, headers=headers)
+            with open(Kcs.file_path['listip'], 'w+') as f:
+                f.write(r.text)
+        except requests.exceptions.RequestException as e:  # This is the correct syntax
+            print('Error calling api listip')
+            logging.error(e)
+            if os.path.isfile(Kcs.file_path['listip']):
+                with open(Kcs.file_path['listip'], 'w+') as f:
+                    f.write("{\n" +
+                            "\t\"localIp\": \"192.168.131.137\",\n" +
+                            "\t\"controller\": \"Faucet\", \n" +
+                            "\t\"communication\": [\n" +
+                            "\t\t{\n" +
+                            "\t\t\t\"ip\": \"192.168.131.138\", \n" +
+                            "\t\t\t\"controller\": \"Faucet\"\n" +
+                            "\t\t}\n" +
+                            "\t]\n" +
+                            "}")
+        finally:
+            ProcessFileQueue.start()
+            Kcs.start_scan()
 
-                grab = {'data': {}}
-                ProcessFileQueue.q.put((read_txt_file, '/tmp/' + ip + '.json', grab))
-                ProcessFileQueue.q.join()
-                content = grab['data'] or ''
-
-                item['data'] = json.dumps(content)
-                item['ver'] = versions[ip]
-                data.append(item)
-
-            send_data = json.dumps(data)
-            print('send_data')
-            print(send_data)
-            r = requests.put(url=api, data=send_data, headers=headers)
-            print('result:')
-            print(r)
+    @staticmethod
+    def get_server_url():
+        config = {
+            'serverUrl': 'http://192.168.43.176:8085'
+        }
+        print(Kcs.file_path['config'])
+        if os.path.isfile(Kcs.file_path['config']):
+            with open(Kcs.file_path['config'], 'r') as f:
+                config = json.load(f)
+        return config['serverUrl']

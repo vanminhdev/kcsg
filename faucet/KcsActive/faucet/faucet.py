@@ -21,6 +21,7 @@ import base64
 import os
 import pathlib
 import time
+from datetime import datetime
 import requests
 import json
 
@@ -46,6 +47,7 @@ from faucet import valve_of
 
 EXPORT_RYU_CONFIGS = ['echo_request_interval', 'maximum_unreplied_echo_requests']
 simple_api_name = 'sina_api_sample'
+
 current_working_dir = str(pathlib.Path().absolute())
 temp_data_dir = current_working_dir + '/tmp/'
 
@@ -132,23 +134,7 @@ class Faucet(RyuAppBase):
                       {simple_api_name: self})
 
         pathlib.Path(temp_data_dir).mkdir(parents=True, exist_ok=True)
-        if not os.path.isfile(temp_data_dir + 'listip.json'):
-            f = open(temp_data_dir + 'listip.json', 'w+')
-            f.write("{\n" +
-                    "\t\"localIp\": \"...\",\n" +
-                    "\t\"controller\": \"...\", \n" +
-                    "\t\"communication\": [\n" +
-                    "\t\t{\n" +
-                    "\t\t\t\"ip\": \"...\", \n" +
-                    "\t\t\t\"controller\": \"...\"\n" +
-                    "\t\t}, \n" +
-                    "\t\t{\n" +
-                    "\t\t\t\"ip\": \"...\", \n" +
-                    "\t\t\t\"controller\": \"...\"\n" +
-                    "\t\t}\n" +
-                    "\t]\n" +
-                    "}");
-            f.close()
+        init_listip_config()
 
     @kill_on_exception(exc_logname)
     def _check_thread_exception(self):
@@ -377,7 +363,7 @@ class Faucet(RyuAppBase):
     @set_ev_cls(dpset.EventPortModify, MAIN_DISPATCHER)  # pylint: disable=no-member
     def get_change_port_event(self, ryu_event):
         """Get port change event. """
-
+        print('port')
         try:
             self.send_notify(path='http://localhost:8080/faucet/sina/getportmac', kind='port_mac')
             self.send_notify(path='http://localhost:8080/faucet/sina/getl2port', kind='l2_port')
@@ -386,25 +372,26 @@ class Faucet(RyuAppBase):
         except Exception as e:
             self.logger.error(e)
 
-    @set_ev_cls(dpset.EventDP, CONFIG_DISPATCHER)  # pylint: disable=no-member
-    def get_change_switch_event(self, ryu_event):
-        """Get the switch status change event.
-
-        Args:
-            ryu_event (ryu.controller.dpset.EventDP): trigger.
-        """
-        try:
-            self.send_notify(path='http://localhost:8080/faucet/sina/getportmac', kind='port_mac')
-            self.send_notify(path='http://localhost:8080/faucet/sina/getl2port', kind='l2_port')
-        except Exception as e:
-            self.logger.error(e)
-
-        status = ryu_event.enter
-        if status:
-            self.logger.info('********************** switch connected **********************')
-            self.logger.info(self.dpset.get_all())
-        else:
-            self.logger.info('********************** switch disconnected *******************')
+    # @set_ev_cls(dpset.Da, MAIN_DISPATCHER)  # pylint: disable=no-member
+    # def get_change_switch_event(self, ryu_event):
+    #     """Get the switch status change event.
+    #
+    #     Args:
+    #         ryu_event (ryu.controller.dpset.EventDP): trigger.
+    #     """
+    #     try:
+    #         print('switch')
+    #         self.send_notify(path='http://localhost:8080/faucet/sina/getportmac', kind='port_mac')
+    #         self.send_notify(path='http://localhost:8080/faucet/sina/getl2port', kind='l2_port')
+    #     except Exception as e:
+    #         self.logger.error(e)
+    #
+    #     status = ryu_event.enter
+    #     if status:
+    #         self.logger.info('********************** switch connected **********************')
+    #         self.logger.info(self.dpset.get_all())
+    #     else:
+    #         self.logger.info('********************** switch disconnected *******************')
 
     def send_notify(self, path, kind):
         try:
@@ -412,30 +399,33 @@ class Faucet(RyuAppBase):
             r = requests.get(url=path, headers=headers)
             data = str(r.text)
             data = json.dumps(data)
-            f = open(temp_data_dir + 'listip.json', 'r')
-            info = json.load(f)
+            print('data')
+            print(data)
+            print(temp_data_dir + 'listip.json')
+            with open(temp_data_dir + 'listip.json', 'r') as f:
+                info = json.load(f)
             localIp = info['localIp']
-            self.write_data_event(local_ip=localIp, data=data, kind=kind)
             send_data = "{\"ip\": \"" + localIp + "\", \"kind\": \"" + kind + "\", \"data\": " + data + "}"
             communication = info['communication']
             count = len(communication)
+            self.write_data_event(local_ip=localIp, data=data, kind=kind)
             for i in range(count):
                 js = json.loads(str(communication[i]).replace("\'", "\""))
                 ip = js['ip']
                 controller = js['controller']
-
+                print('ip: ' + ip)
                 if controller == "ONOS":
                     path = 'http://' + ip + ":8181/onos/sina/updateInfo/updateData"
                     headers = {"Authorization": "Basic a2FyYWY6a2FyYWY=",
                                "Content-Type": "application/json",
                                "Accept": "application/json"}
-                    r = requests.post(url=path, data=send_data, headers=headers)
+                    r = requests.post(url=path, data=send_data, headers=headers, timeout=5)
                     self.logger.info("Send notify success")
                 elif controller == "Faucet":
                     path = 'http://' + ip + ":8080/faucet/sina/updateInfo/updateData"
                     headers = {"Content-Type": "application/json",
                                "Accept": "application/json"}
-                    r = requests.post(url=path, data=send_data, headers=headers)
+                    r = requests.post(url=path, data=send_data, headers=headers, timeout=5)
                     self.logger.info("Send notify success")
 
                 elif controller == "ODL":
@@ -444,13 +434,16 @@ class Faucet(RyuAppBase):
                                "Content-Type": "application/json",
                                "Accept": "application/json"}
                     final_data = "{\"input\": {\"data\": " + json.dumps(send_data) + "}}"
-                    r = requests.post(url=path, data=final_data, headers=headers)
+                    r = requests.post(url=path, data=final_data, headers=headers, timeout=5)
                     self.logger.info("Send notify success")
         except Exception as e:
+            print(e)
             self.logger.error(e)
 
     def write_data_event(self, local_ip, data, kind):
+        print('WRITE')
         path = temp_data_dir + local_ip + '.json'
+        print(path)
         mode = 'a' if os.path.isfile(path) else 'w+'
         content = {}
         content[kind] = data
@@ -458,6 +451,7 @@ class Faucet(RyuAppBase):
             if mode == 'a':
                 f.write('\n')
             f.write(json.dumps(content))
+        call_log_api(local_ip, local_ip, 0)
 
 
 url = "/faucet/sina"
@@ -517,8 +511,72 @@ class SinaApiSample(ControllerBase):
         kind = data['kind']
         dataToWrite = data['data']
         dataToWrite = json.loads(dataToWrite)
-        path = temp_data_dir + "/" + ip + "_" + kind + ".json"
-        f = open(path, 'w+')
-        json.dump(dataToWrite, f)
-        f.close()
+        local_ip = ''
+        path = temp_data_dir + ip + "_" + kind + ".json"
+        with open(path, 'w+') as f:
+            json.dump(dataToWrite, f)
+        with open(temp_data_dir + 'listip.json', 'r') as f:
+            info = json.load(f)
+            local_ip = info['localIp']
+        call_log_api(ip, local_ip, 0)
         return "success"
+
+def init_listip_config():
+    server_url = get_server_url()
+    api = server_url + '/api/remoteIp/list-ip'
+    headers = {"Content-Type": "application/json",
+               "Accept": "application/json"}
+    try:
+        r = requests.get(url=api, headers=headers, timeout=5)
+        with open(temp_data_dir + 'listip.json', 'w+'
+                                                 '') as f:
+            f.write(r.text)
+    except requests.exceptions.RequestException as e:  # This is the correct syntax
+        print('Error calling api listip')
+        if not os.path.isfile(temp_data_dir + 'listip.json'):
+            f = open(temp_data_dir + 'listip.json', 'w+')
+            f.write("{\n" +
+                    "\t\"localIp\": \"...\",\n" +
+                    "\t\"controller\": \"...\", \n" +
+                    "\t\"communication\": [\n" +
+                    "\t\t{\n" +
+                    "\t\t\t\"ip\": \"...\", \n" +
+                    "\t\t\t\"controller\": \"...\"\n" +
+                    "\t\t}, \n" +
+                    "\t\t{\n" +
+                    "\t\t\t\"ip\": \"...\", \n" +
+                    "\t\t\t\"controller\": \"...\"\n" +
+                    "\t\t}\n" +
+                    "\t]\n" +
+                    "}");
+            f.close()
+
+
+def call_log_api(sender_ip, receiver_ip, version):
+    server_url = get_server_url()
+    api = server_url + '/api/log/write'
+    send_data = {
+        'ipSender': sender_ip,
+        'ipReceiver': receiver_ip,
+        'time': datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+        'version': version
+    }
+    headers = {"Content-Type": "application/json",
+               "Accept": "application/json"}
+    print('call_log_api: ' + json.dumps(send_data))
+    try:
+        r = requests.post(url=api, data=json.dumps(send_data), headers=headers, timeout=5)
+        print('r:')
+        print(r.text)
+    except requests.exceptions.RequestException as e:  # This is the correct syntax
+        print(e.response)
+
+
+def get_server_url():
+    config = {
+        'serverUrl': 'http://192.168.43.176:8085'
+    }
+    if os.path.isfile(current_working_dir + '/config.json'):
+        with open(current_working_dir + '/config.json', 'r') as f:
+            config = json.load(f)
+    return config['serverUrl']

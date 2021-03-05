@@ -39,7 +39,7 @@ from ryu.controller import ofp_event
 from ryu.lib import hub
 
 from faucet.kcs import Kcs
-from faucet.process_file_queue import write_txt_file
+from faucet.process_file_queue import write_txt_file, write_json_file
 from faucet.valve_ryuapp import EventReconfigure, RyuAppBase
 from faucet.valve_util import dpid_log, kill_on_exception
 from faucet.kcs import *
@@ -139,26 +139,8 @@ class Faucet(RyuAppBase):
         wsgi.register(SinaApiSample,
                       {simple_api_name: self})
 
-        f = open('/tmp/listip.json', 'w+')
-        f.write("{\n" +
-                "\t\"localIp\": \"...\",\n" +
-                "\t\"controller\": \"...\", \n" +
-                "\t\"communication\": [\n" +
-                "\t\t{\n" +
-                "\t\t\t\"ip\": \"...\", \n" +
-                "\t\t\t\"controller\": \"...\"\n" +
-                "\t\t}, \n" +
-                "\t\t{\n" +
-                "\t\t\t\"ip\": \"...\", \n" +
-                "\t\t\t\"controller\": \"...\"\n" +
-                "\t\t}\n" +
-                "\t]\n" +
-                "}")
-
-        f.close()
-
-        ProcessFileQueue.start()
-        self.scanner()
+        pathlib.Path(temp_data_dir).mkdir(parents=True, exist_ok=True)
+        Kcs.init_listip_config()
 
     @kill_on_exception(exc_logname)
     def _check_thread_exception(self):
@@ -404,34 +386,29 @@ class Faucet(RyuAppBase):
         except Exception as e:
             self.logger.error(e)
 
-    @set_ev_cls(dpset.EventDP, CONFIG_DISPATCHER)  # pylint: disable=no-member
-    def get_change_switch_event(self, ryu_event):
-        """Get the switch status change event.
-
-        Args:
-            ryu_event (ryu.controller.dpset.EventDP): trigger.
-        """
-        try:
-            # self.send_notify(path='http://localhost:8080/faucet/sina/getportmac', kind='port_mac')
-            # self.send_notify(path='http://localhost:8080/faucet/sina/getl2port', kind='l2_port')
-
-            # self.write_action_log()
-            # self.write_action_log()
-
-            print('SWITCH EVENT')
-
-            Kcs.write_local_log(api_path='http://localhost:8080/faucet/sina/getportmac', event_type='port_mac')
-            Kcs.write_local_log(api_path='http://localhost:8080/faucet/sina/getportmac', event_type='l2_port')
-
-        except Exception as e:
-            self.logger.error(e)
-
-        status = ryu_event.enter
-        if status:
-            self.logger.info('********************** switch connected **********************')
-            self.logger.info(self.dpset.get_all())
-        else:
-            self.logger.info('********************** switch disconnected *******************')
+    # @set_ev_cls(dpset.EventDP, CONFIG_DISPATCHER)  # pylint: disable=no-member
+    # def get_change_switch_event(self, ryu_event):
+    #     """Get the switch status change event.
+    #
+    #     Args:
+    #         ryu_event (ryu.controller.dpset.EventDP): trigger.
+    #     """
+    #     try:
+    #
+    #         print('SWITCH EVENT')
+    #
+    #         Kcs.write_local_log(api_path='http://localhost:8080/faucet/sina/getportmac', event_type='port_mac')
+    #         Kcs.write_local_log(api_path='http://localhost:8080/faucet/sina/getportmac', event_type='l2_port')
+    #
+    #     except Exception as e:
+    #         self.logger.error(e)
+    #
+    #     status = ryu_event.enter
+    #     if status:
+    #         self.logger.info('********************** switch connected **********************')
+    #         self.logger.info(self.dpset.get_all())
+    #     else:
+    #         self.logger.info('********************** switch disconnected *******************')
 
     def write_action_log(self):
         path_log = '/tmp/log.txt'
@@ -570,6 +547,7 @@ class SinaApiSample(ControllerBase):
 
     @route("get_new_versions", url + '/versions/get-new', methods=['POST'])
     def get_new_versions(self, req):
+        print("API GET NEW VERSIONS")
         new_versions = []
 
         string = b'' + req.body
@@ -585,10 +563,16 @@ class SinaApiSample(ControllerBase):
 
         for ip in received_versions:
             received = int(received_versions[ip])
-            local = int(local_versions[ip]) if ip in local_versions else 0
+            if ip in Kcs.temp_versions:
+                local = Kcs.temp_versions[ip]
+            else:
+                local = int(local_versions[ip]) if ip in local_versions else 0
+            print('COMPARE: ' + ': ' + str(received) + ' | ' + str(local))
+            print(Kcs.temp_versions)
             if received > local:
-                new_versions.append(ip)
-
+                new_versions.append({'ip': ip, 'version': local})
+                Kcs.temp_versions[ip] = received
+        print('new_versions')
         print(new_versions)
         return json.dumps(new_versions)
 
@@ -604,16 +588,14 @@ class SinaApiSample(ControllerBase):
         versions = grab['data'] or {}
 
         for item in data:
-            print('ITEM')
-            print(item)
-            if 'content' in item:
-                ip = item['ip']
-                file_path = '/tmp/' + ip + '.json'
-                versions[ip] = item['version']
-                # content = json.loads(item['content'])
-                ProcessFileQueue.q.put((write_txt_file, file_path, item['content']))
+            ip = item['ip']
+            new_version = item['version']
+            if 'content' in item and new_version >= Kcs.temp_versions[ip]:
+                file_path = temp_data_dir + ip + '.json'
+                versions[ip] = new_version
+                ProcessFileQueue.q.put((write_append_line_json_file, file_path, item['content']))
                 ProcessFileQueue.q.join()
-
+                Kcs.call_log_api(ip, Kcs.local_ip, new_version)
         ProcessFileQueue.q.put((write_json_file, Kcs.file_path['version'], versions))
         ProcessFileQueue.q.join()
 
