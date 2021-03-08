@@ -73,7 +73,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
     @SuppressFBWarnings(value = { "MS_PKGPROTECT" })
     public static String SERVER_URL = null;
 
-    public static final String INIT_PATH = "/home/onos/sdn";
+    public static final String INIT_PATH = "/home/odl/sdn";
 
     public SinaProvider(final DataBroker dataBroker, RpcProviderService rpcProviderService) {
         this.dataBroker = dataBroker;

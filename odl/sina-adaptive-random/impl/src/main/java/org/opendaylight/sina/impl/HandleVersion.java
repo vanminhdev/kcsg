@@ -23,7 +23,7 @@ import org.json.JSONObject;
 import org.opendaylight.sina.impl.models.InforControllerModel;
 
 public final class HandleVersion {
-    private static String INIT_PATH = "/home/onos/sdn";
+    private static String INIT_PATH = "/home/odl/sdn";
 
     private HandleVersion() {
     }

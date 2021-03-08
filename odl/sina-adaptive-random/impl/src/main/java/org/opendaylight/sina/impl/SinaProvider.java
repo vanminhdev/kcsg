@@ -104,7 +104,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
     private static int countRowOld = 0;
     private static int countRowNew = 0;
 
-    public static final String INIT_PATH = "/home/onos/sdn";
+    public static final String INIT_PATH = "/home/odl/sdn";
 
     final InstanceIdentifier<Node> instanceIdentifier = InstanceIdentifier.builder(Nodes.class).child(Node.class)
             .build();
