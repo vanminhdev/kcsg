@@ -332,24 +332,26 @@ public class KcsgListenerManager {
         }
         case "ODL": {
             try {
-                JSONObject input = new JSONObject();
-                input.put("ip", srcIp);
-                input.put("version", srcVersion);
+                JSONObject ipVerJson = new JSONObject();
+                ipVerJson.put("ip", srcIp);
+                ipVerJson.put("version", srcVersion);
+
+                JSONObject dataJson = new JSONObject();
+                dataJson.put("data", ipVerJson.toString());
+
                 JSONObject bodyReq = new JSONObject();
-                bodyReq.put("input", input);
+                bodyReq.put("input", dataJson);
 
                 HttpResponse<String> response = Unirest
                     .post("http://" + desCtrller.getIp() + ":8181/restconf/operations/sina:updateVersion")
                     .header("Content-Type", "application/json").header("Accept", "application/json")
-                    .header("Authorization", "Basic YWRtaW46YWRtaW4=")
-                    .body(bodyReq)
-                    .asString();
+                    .header("Authorization", "Basic YWRtaW46YWRtaW4=").body(bodyReq).asString();
                 ResultWriteModel result = new ResultWriteModel();
                 if (response.getStatus() == 200) {
                     log.info("update success in controller: " + desCtrller.getIp());
                 } else {
-                    log.warn("read version in controller: " + desCtrller.getIp() +
-                        " with status code: " + response.getStatus());
+                    log.warn("read version in controller: " + desCtrller.getIp() + " with status code: "
+                        + response.getStatus());
                 }
                 result.setLength(bodyReq.toString().getBytes().length);
                 return result;
@@ -378,7 +380,7 @@ public class KcsgListenerManager {
             logDetail.put("dstIp", dstController.getIp());
             logDetail.put("start", java.time.LocalDateTime.now());
             ResultReadModel result = null;
-            if (controllerTarget.getIp() != dstController.getIp()) {
+            if (!controllerTarget.getIp().equals(dstController.getIp())) {
                 result = handleRead(controllerTarget, dstController, versionFromServer);
             } else {
                 logDetail.put("isSuccess", true);
@@ -454,27 +456,29 @@ public class KcsgListenerManager {
         }
         case "ODL": {
             try {
-                JSONObject input = new JSONObject();
-                input.put("ip", srcCtrller.getIp());
+                JSONObject ipJson = new JSONObject();
+                ipJson.put("ip", srcCtrller.getIp());
+
+                JSONObject dataJson = new JSONObject();
+                dataJson.put("data", ipJson.toString());
+
                 JSONObject bodyReq = new JSONObject();
-                bodyReq.put("input", input);
+                bodyReq.put("input", dataJson);
 
                 HttpResponse<String> response = Unirest
                     .post("http://" + desCtrller.getIp() + ":8181/restconf/operations/sina:getVersion")
                     .header("Content-Type", "application/json").header("Accept", "application/json")
-                    .header("Authorization", "Basic YWRtaW46YWRtaW4=")
-                    .body(bodyReq)
-                    .asString();
+                    .header("Authorization", "Basic YWRtaW46YWRtaW4=").body(bodyReq).asString();
                 ResultReadModel result = new ResultReadModel();
                 if (response.getStatus() == 200) {
                     JSONObject resBody = new JSONObject(response.getBody());
-                    JSONObject output = resBody.getJSONObject("output");
-
-                    result.setSuccess(output.getInt("version") == srcVer);
+                    JSONObject outputJson = resBody.getJSONObject("output");
+                    JSONObject verJson = new JSONObject(outputJson.getString("result"));
+                    result.setSuccess(verJson.getInt("version") == srcVer);
                 } else {
                     result.setSuccess(false);
-                    log.warn("read version in controller: " + desCtrller.getIp() +
-                        " with status code: " + response.getStatus());
+                    log.warn("read version in controller: " + desCtrller.getIp() + " with status code: "
+                        + response.getStatus());
                 }
                 result.setLength(bodyReq.toString().getBytes().length);
                 return result;
