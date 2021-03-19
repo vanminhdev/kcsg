@@ -183,6 +183,7 @@ class Kcs:
                 "srcIp": ip,
                 "dstIp": c["ip"],
                 "start": datetime.now().isoformat(),
+                "version": version
             }
             length = Kcs.handle_write_data(ip, version, c["ip"], c["kind"])
             if length is not None:
@@ -253,6 +254,7 @@ class Kcs:
                 "srcIp": controller_target["ip"],
                 "dstIp": c["ip"],
                 "start": datetime.now().isoformat(),
+                "version": version_from_server
             }
             result = Kcs.handle_read_data(controller_target["ip"], version_from_server, c["ip"], c["kind"])
             if result is not None:

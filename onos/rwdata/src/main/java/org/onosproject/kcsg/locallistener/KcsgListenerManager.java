@@ -260,6 +260,7 @@ public class KcsgListenerManager {
             logDetail.put("srcIp", ip);
             logDetail.put("dstIp", dstController.getIp());
             logDetail.put("start", java.time.LocalDateTime.now());
+            logDetail.put("version", version);
             ResultWriteModel result = null;
             if (ip != dstController.getIp()) {
                 result = handleWrite(ip, version, dstController);
@@ -379,6 +380,7 @@ public class KcsgListenerManager {
             logDetail.put("srcIp", controllerTarget.getIp());
             logDetail.put("dstIp", dstController.getIp());
             logDetail.put("start", java.time.LocalDateTime.now());
+            logDetail.put("version", versionFromServer);
             ResultReadModel result = null;
             if (!controllerTarget.getIp().equals(dstController.getIp())) {
                 result = handleRead(controllerTarget, dstController, versionFromServer);
