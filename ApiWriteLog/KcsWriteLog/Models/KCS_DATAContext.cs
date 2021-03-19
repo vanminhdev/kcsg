@@ -21,10 +21,18 @@ namespace KcsWriteLog.Models
         public virtual DbSet<Config> Configs { get; set; }
         public virtual DbSet<ControllerIp> ControllerIps { get; set; }
         public virtual DbSet<DataTraining> DataTrainings { get; set; }
-        public virtual DbSet<DataTrainning> DataTrainnings { get; set; }
         public virtual DbSet<LogRead> LogReads { get; set; }
         public virtual DbSet<LogWrite> LogWrites { get; set; }
         public virtual DbSet<VersionDatum> VersionData { get; set; }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            if (!optionsBuilder.IsConfigured)
+            {
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
+                optionsBuilder.UseSqlServer("Server=.\\SQLEXPRESS;Database=KCS_DATA;User ID=sa;Password=1234567");
+            }
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -76,13 +84,6 @@ namespace KcsWriteLog.Models
             modelBuilder.Entity<DataTraining>(entity =>
             {
                 entity.ToTable("DataTraining");
-
-                entity.Property(e => e.Time).HasColumnType("datetime");
-            });
-
-            modelBuilder.Entity<DataTrainning>(entity =>
-            {
-                entity.ToTable("DataTrainning");
 
                 entity.Property(e => e.Time).HasColumnType("datetime");
             });

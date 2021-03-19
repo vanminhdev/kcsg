@@ -66,6 +66,16 @@ namespace KcsWriteLog.Controllers
                         Length = item.Length
                     });
                 }
+
+                _context.DataTrainings.Add(new DataTraining
+                {
+                    ClientMetric = lst.Max(o => o.End) - lst.Min(o => o.Start),
+                    StaleMetric = TimeSpan.Zero,
+                    Overhead = lst.Sum(o => o.Length),
+                    Time = DateTime.Now,
+                    CountFalse = lst.Count(o => !o.IsSuccess)
+                });
+
                 _context.SaveChanges();
                 return Ok();
             }
@@ -94,6 +104,15 @@ namespace KcsWriteLog.Controllers
                         Length = item.Length
                     });
                 }
+
+                _context.DataTrainings.Add(new DataTraining
+                {
+                    ClientMetric = TimeSpan.Zero,
+                    StaleMetric = lst.Max(o => o.End) - lst.Min(o => o.Start),
+                    Overhead = lst.Sum(o => o.Length),
+                    Time = DateTime.Now,
+                    CountFalse = 0
+                });
                 _context.SaveChanges();
                 return Ok();
             }
