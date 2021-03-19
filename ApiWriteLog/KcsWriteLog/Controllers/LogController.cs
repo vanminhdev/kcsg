@@ -52,8 +52,14 @@ namespace KcsWriteLog.Controllers
         {
             try
             {
+                bool isSuccess = false;
                 foreach (var item in lst)
                 {
+                    if (item.IsSuccess)
+                    {
+                        isSuccess = true;
+                    }
+
                     _context.LogReads.Add(new Models.LogRead
                     {
                         LocalIp = item.LocalIp,
@@ -73,7 +79,7 @@ namespace KcsWriteLog.Controllers
                     StaleMetric = TimeSpan.Zero,
                     Overhead = lst.Sum(o => o.Length),
                     Time = DateTime.Now,
-                    CountFalse = lst.Count(o => !o.IsSuccess)
+                    IsSuccess = isSuccess,
                 });
 
                 _context.SaveChanges();
@@ -111,7 +117,7 @@ namespace KcsWriteLog.Controllers
                     StaleMetric = lst.Max(o => o.End) - lst.Min(o => o.Start),
                     Overhead = lst.Sum(o => o.Length),
                     Time = DateTime.Now,
-                    CountFalse = 0
+                    IsSuccess = true
                 });
                 _context.SaveChanges();
                 return Ok();
