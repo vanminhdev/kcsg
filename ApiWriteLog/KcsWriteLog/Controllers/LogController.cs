@@ -59,6 +59,7 @@ namespace KcsWriteLog.Controllers
                         LocalIp = item.LocalIp,
                         SrcIp = item.SrcIp,
                         DstIp = item.DstIp,
+                        Version = item.Version,
                         Start = item.Start,
                         End = item.End,
                         IsSuccess = item.IsSuccess,
@@ -87,6 +88,7 @@ namespace KcsWriteLog.Controllers
                         LocalIp = item.LocalIp,
                         SrcIp = item.SrcIp,
                         DstIp = item.DstIp,
+                        Version = item.Version,
                         Start = item.Start,
                         End = item.End,
                         Length = item.Length

@@ -10,6 +10,7 @@ namespace KcsWriteLog.ViewModels
         public string LocalIp { get; set; }
         public string SrcIp { get; set; }
         public string DstIp { get; set; }
+        public int Version { get; set; }
         public DateTime Start { get; set; }
         public DateTime End { get; set; }
         public int Length { get; set; }
