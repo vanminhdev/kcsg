@@ -72,7 +72,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
     @SuppressFBWarnings(value = { "MS_PKGPROTECT" })
     public static String SERVER_URL = null;
 
-    public static final String INIT_PATH = "/home/odl/sdn";
+    public static final String INIT_PATH = "/home/onos/sdn";
 
     final InstanceIdentifier<Node> instanceIdentifier = InstanceIdentifier.builder(Nodes.class).child(Node.class)
             .build();
@@ -262,10 +262,10 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
             logDetail.put("start", java.time.LocalDateTime.now());
             logDetail.put("version", version);
             ResultWriteModel result = null;
-            if (!ip.equals(dstController.getIp())) {
-                result = handleWrite(ip, version, dstController);
-            } else {
+            if (ip.equals(myIpAddress)) {
                 logDetail.put("length", 0);
+            } else {
+                result = handleWrite(ip, version, dstController);
             }
             if (result != null) {
                 logDetail.put("length", result.getLength());
@@ -287,7 +287,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
                     bodyReq.put("ip", srcIp);
                     bodyReq.put("version", srcVersion);
                     HttpResponse<String> response = Unirest
-                        .post("http://" + desCtrller.getIp() + ":8181/onos/kcsg/communicate/update-version")
+                        .post("http://" + desCtrller.getIp() + ":8181/onos/rwdata/communicate/update-version")
                         .header("Content-Type", "application/json").header("Accept", "application/json")
                         .header("Authorization", "Basic a2FyYWY6a2FyYWY=").body(bodyReq).asString();
                     ResultWriteModel result = new ResultWriteModel();
@@ -381,14 +381,14 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
             logDetail.put("start", java.time.LocalDateTime.now());
             logDetail.put("version", versionFromServer);
             ResultReadModel result = null;
-            if (controllerTarget.getIp().equals(dstController.getIp())) {
-                result = handleRead(controllerTarget, dstController, versionFromServer);
-            } else {
+            if (controllerTarget.getIp().equals(myIpAddress)) {
                 logDetail.put("isSuccess", true);
                 logDetail.put("length", 0);
+            } else {
+                result = handleRead(controllerTarget, dstController, versionFromServer);
             }
             if (result != null) {
-                logDetail.put("isSuccess", result.isSuccess());
+                logDetail.put("isSuccess", false);
                 logDetail.put("length", result.getLength());
             }
             logDetail.put("end", java.time.LocalDateTime.now());
@@ -406,7 +406,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
                     JSONObject bodyReq = new JSONObject();
                     bodyReq.put("ip", srcCtrller.getIp());
                     HttpResponse<String> response = Unirest
-                        .post("http://" + desCtrller.getIp() + ":8181/onos/kcsg/communicate/get-version")
+                        .post("http://" + desCtrller.getIp() + ":8181/onos/rwdata/communicate/get-version")
                         .header("Content-Type", "application/json").header("Accept", "application/json")
                         .header("Authorization", "Basic a2FyYWY6a2FyYWY=").body(bodyReq).asString();
                     ResultReadModel result = new ResultReadModel();
@@ -496,16 +496,18 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
             public void run() {
                 readData();
             }
-        }, 0, 1000);
+        }, 0, 5000);
     }
 
     @Override
     public ListenableFuture<RpcResult<GetVersionOutput>> getVersion(GetVersionInput input) {
-        GetVersionOutputBuilder builder = new GetVersionOutputBuilder();
         JSONObject jsonObject = new JSONObject(input.getData());
+        LOG.info(MSG, jsonObject.toString());
         int version = HandleVersion.getVersion(jsonObject.getString("ip"));
+        LOG.info(MSG, version);
         JSONObject jsonResult = new JSONObject();
-        jsonObject.put("version", version);
+        jsonResult.put("version", version);
+        GetVersionOutputBuilder builder = new GetVersionOutputBuilder();
         builder.setResult(jsonResult.toString());
         return RpcResultBuilder.success(builder.build()).buildFuture();
     }
@@ -515,6 +517,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         UpdateVersionOutputBuilder builder = new UpdateVersionOutputBuilder();
         JSONObject jsonObject = new JSONObject(input.getData());
         HandleVersion.setVersion(jsonObject.getString("ip"), jsonObject.getInt("version"));
+        builder.setResult("success");
         return RpcResultBuilder.success(builder.build()).buildFuture();
     }
 }

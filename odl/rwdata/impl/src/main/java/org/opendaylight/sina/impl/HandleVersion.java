@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class HandleVersion {
-    private static String INIT_PATH = "/home/odl/sdn";
+    private static String INIT_PATH = "/home/onos/sdn";
     private static final Logger LOG = LoggerFactory.getLogger(HandleVersion.class);
     private static final String MSG = "msg: {}";
 

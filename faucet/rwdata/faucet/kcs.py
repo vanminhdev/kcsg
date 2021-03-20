@@ -69,7 +69,6 @@ class Kcs:
         f = open(Kcs.file_path['listip'], 'r')
         info = json.load(f)
         f.close()
-
         Kcs.local_ip = info['localIp']
 
     @staticmethod
@@ -185,11 +184,14 @@ class Kcs:
                 "start": datetime.now().isoformat(),
                 "version": version
             }
-            length = Kcs.handle_write_data(ip, version, c["ip"], c["kind"])
-            if length is not None:
-                log_detail["length"] = length
-            else:
+            if ip == Kcs.local_ip:
                 log_detail["length"] = 0
+            else:
+                length = Kcs.handle_write_data(ip, version, c["ip"], c["kind"])
+                if length is not None:
+                    log_detail["length"] = length
+                else:
+                    log_detail["length"] = 0
             log_detail["end"] = datetime.now().isoformat()
             log_write.append(log_detail)
         HandleCallServer.send_log_write(log_write)
@@ -214,7 +216,7 @@ class Kcs:
 
                 return len(bytes(send_data))
             elif kind_dst == kinds['ONOS']:
-                api = 'http://' + ip_dst + ':8181/onos/kcsg/communicate/update-version'
+                api = 'http://' + ip_dst + ':8181/onos/rwdata/communicate/update-version'
                 print(api)
                 data = {"ip": ip, "version": version}
                 send_data = json.dumps(data)
@@ -256,13 +258,17 @@ class Kcs:
                 "start": datetime.now().isoformat(),
                 "version": version_from_server
             }
-            result = Kcs.handle_read_data(controller_target["ip"], version_from_server, c["ip"], c["kind"])
-            if result is not None:
-                log_detail["length"] = result["length"]
-                log_detail["isSuccess"] = result["isSuccess"]
-            else:
+            if controller_target["ip"] == Kcs.local_ip:
                 log_detail["length"] = 0
-                log_detail["isSuccess"] = False
+                log_detail["isSuccess"] = True
+            else:
+                result = Kcs.handle_read_data(controller_target["ip"], version_from_server, c["ip"], c["kind"])
+                if result is not None:
+                    log_detail["length"] = result["length"]
+                    log_detail["isSuccess"] = result["isSuccess"]
+                else:
+                    log_detail["length"] = 0
+                    log_detail["isSuccess"] = False
             log_detail["end"] = datetime.now().isoformat()
             log_read.append(log_detail)
         HandleCallServer.send_log_read(log_read)
@@ -287,7 +293,7 @@ class Kcs:
                 is_success = res["version"] == ver_from_server
                 return {"length": len(bytes(send_data)), "isSuccess": is_success}
             elif kind_dst == kinds['ONOS']:
-                api = 'http://' + ip_dst + ':8181/onos/kcsg/communicate/get-version'
+                api = 'http://' + ip_dst + ':8181/onos/rwdata/communicate/get-version'
                 print(api)
                 data = {"ip": ip_src}
                 send_data = json.dumps(data)

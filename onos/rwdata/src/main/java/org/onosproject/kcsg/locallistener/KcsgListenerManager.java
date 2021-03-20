@@ -262,10 +262,17 @@ public class KcsgListenerManager {
             logDetail.put("start", java.time.LocalDateTime.now());
             logDetail.put("version", version);
             ResultWriteModel result = null;
+<<<<<<< HEAD
             if (ip.equals(myIpAddress)) {
                 logDetail.put("length", 0);
             } else {
                 result = handleWrite(ip, version, dstController);
+=======
+            if (ip != dstController.getIp()) {
+                result = handleWrite(ip, version, dstController);
+            } else {
+                logDetail.put("length", 0);
+>>>>>>> 94fee3effbcebd4de94127df8d3ae663a5f606e4
             }
             if (result != null) {
                 logDetail.put("length", result.getLength());
@@ -284,7 +291,11 @@ public class KcsgListenerManager {
                 bodyReq.put("ip", srcIp);
                 bodyReq.put("version", srcVersion);
                 HttpResponse<String> response = Unirest
+<<<<<<< HEAD
                         .post("http://" + desCtrller.getIp() + ":8181/onos/rwdata/communicate/update-version")
+=======
+                        .post("http://" + desCtrller.getIp() + ":8181/onos/kcsg/communicate/update-version")
+>>>>>>> 94fee3effbcebd4de94127df8d3ae663a5f606e4
                         .header("Content-Type", "application/json")
                         .header("Accept", "application/json")
                         .header("Authorization", "Basic a2FyYWY6a2FyYWY=")
@@ -382,6 +393,7 @@ public class KcsgListenerManager {
             logDetail.put("start", java.time.LocalDateTime.now());
             logDetail.put("version", versionFromServer);
             ResultReadModel result = null;
+<<<<<<< HEAD
             if (controllerTarget.getIp().equals(myIpAddress)) {
                 logDetail.put("isSuccess", true);
                 logDetail.put("length", 0);
@@ -390,6 +402,16 @@ public class KcsgListenerManager {
             }
             if (result != null) {
                 logDetail.put("isSuccess", false);
+=======
+            if (!controllerTarget.getIp().equals(dstController.getIp())) {
+                result = handleRead(controllerTarget, dstController, versionFromServer);
+            } else {
+                logDetail.put("isSuccess", true);
+                logDetail.put("length", 0);
+            }
+            if (result != null) {
+                logDetail.put("isSuccess", result.isSuccess());
+>>>>>>> 94fee3effbcebd4de94127df8d3ae663a5f606e4
                 logDetail.put("length", result.getLength());
             }
             logDetail.put("end", java.time.LocalDateTime.now());
@@ -405,14 +427,21 @@ public class KcsgListenerManager {
                 JSONObject bodyReq = new JSONObject();
                 bodyReq.put("ip", srcCtrller.getIp());
                 HttpResponse<String> response = Unirest
+<<<<<<< HEAD
                         .post("http://" + desCtrller.getIp() + ":8181/onos/rwdata/communicate/get-version")
+=======
+                        .post("http://" + desCtrller.getIp() + ":8181/onos/kcsg/communicate/get-version")
+>>>>>>> 94fee3effbcebd4de94127df8d3ae663a5f606e4
                         .header("Content-Type", "application/json")
                         .header("Accept", "application/json")
                         .header("Authorization", "Basic a2FyYWY6a2FyYWY=")
                         .body(bodyReq)
                         .asString();
                 ResultReadModel result = new ResultReadModel();
+<<<<<<< HEAD
                 log.info("BODY: " + response.getBody());
+=======
+>>>>>>> 94fee3effbcebd4de94127df8d3ae663a5f606e4
                 if (response.getStatus() == 200) {
                     JSONObject resBody = new JSONObject(response.getBody());
                     result.setSuccess(resBody.getInt("version") == srcVer);
@@ -473,7 +502,10 @@ public class KcsgListenerManager {
                     .header("Content-Type", "application/json").header("Accept", "application/json")
                     .header("Authorization", "Basic YWRtaW46YWRtaW4=").body(bodyReq).asString();
                 ResultReadModel result = new ResultReadModel();
+<<<<<<< HEAD
                 log.info("BODY: " + response.getBody());
+=======
+>>>>>>> 94fee3effbcebd4de94127df8d3ae663a5f606e4
                 if (response.getStatus() == 200) {
                     JSONObject resBody = new JSONObject(response.getBody());
                     JSONObject outputJson = resBody.getJSONObject("output");
@@ -504,7 +536,11 @@ public class KcsgListenerManager {
                 public void run() {
                     readData();
                 }
+<<<<<<< HEAD
             }, 0, 5000
+=======
+            }, 0, 1000
+>>>>>>> 94fee3effbcebd4de94127df8d3ae663a5f606e4
         );
     }
 }
