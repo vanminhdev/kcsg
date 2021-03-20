@@ -23,31 +23,47 @@ public class CommunicateApi extends BaseResource {
 
     /**
      * update version.
-     * @param jsonObject input
+     * @param input input
      * @return response code OK
      */
     @POST
     @Path("update-version")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response writeVesion(JSONObject jsonObject) {
-        String ip = jsonObject.getString("ip");
-        int version = jsonObject.getInt("version");
-        HandleVersion.setVersion(ip, version);
-        return Response.ok().build();
+    public Response writeVesion(String input) {
+        log.info(input);
+        try {
+            JSONObject jsonObject = new JSONObject(input);
+            String ip = jsonObject.getString("ip");
+            int version = jsonObject.getInt("version");
+            log.info("update ver of " + ip + " to " + version);
+            HandleVersion.setVersion(ip, version);
+            return Response.ok().build();
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            return Response.status(500).build();
+        }
     }
 
     /**
      * get version.
-     * @param jsonObject input
+     * @param input input
      * @return response code OK
      */
     @POST
     @Path("get-version")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response readVesion(JSONObject jsonObject) {
-        String ip = jsonObject.getString("ip");
-        JSONObject response = new JSONObject();
-        response.put("verison", HandleVersion.getVersion(ip));
-        return Response.ok(response).build();
+    public Response readVesion(String input) {
+        log.info(input);
+        try {
+            JSONObject jsonObject = new JSONObject(input);
+            String ip = jsonObject.getString("ip");
+            log.info("get ver of " + ip);
+            JSONObject response = new JSONObject();
+            response.put("version", HandleVersion.getVersion(ip));
+            return Response.ok(response.toString()).build();
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            return Response.status(500).build();
+        }
     }
 }

@@ -262,13 +262,15 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
             logDetail.put("start", java.time.LocalDateTime.now());
             logDetail.put("version", version);
             ResultWriteModel result = null;
-            if (ip.equals(myIpAddress)) {
+            if (ip.equals(myIpAddress) && dstController.getIp().equals(myIpAddress)) {
                 logDetail.put("length", 0);
             } else {
                 result = handleWrite(ip, version, dstController);
-            }
-            if (result != null) {
-                logDetail.put("length", result.getLength());
+                if (result == null) {
+                    logDetail.put("length", 0);
+                } else {
+                    logDetail.put("length", result.getLength());
+                }
             }
             logDetail.put("end", java.time.LocalDateTime.now());
             log.put(logDetail);
@@ -381,15 +383,18 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
             logDetail.put("start", java.time.LocalDateTime.now());
             logDetail.put("version", versionFromServer);
             ResultReadModel result = null;
-            if (controllerTarget.getIp().equals(myIpAddress)) {
+            if (controllerTarget.getIp().equals(myIpAddress) && dstController.getIp().equals(myIpAddress)) {
                 logDetail.put("isSuccess", true);
                 logDetail.put("length", 0);
             } else {
                 result = handleRead(controllerTarget, dstController, versionFromServer);
-            }
-            if (result != null) {
-                logDetail.put("isSuccess", false);
-                logDetail.put("length", result.getLength());
+                if (result == null) {
+                    logDetail.put("isSuccess", false);
+                    logDetail.put("length", 0);
+                } else {
+                    logDetail.put("isSuccess", result.isSuccess());
+                    logDetail.put("length", result.getLength());
+                }
             }
             logDetail.put("end", java.time.LocalDateTime.now());
             log.put(logDetail);
