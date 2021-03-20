@@ -5,6 +5,7 @@ import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import org.json.JSONObject;
 import org.onosproject.core.CoreService;
+import org.onosproject.kcsg.restapi.communicateapi.KcsgCommunicateApiService;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
@@ -19,8 +20,8 @@ import static org.slf4j.LoggerFactory.getLogger;
  * <p>
  * the mapping between internal changes and the exposed topologies.
  */
-@Component(immediate = true, service = {})
-public class ApiManager {
+@Component(immediate = true, service = {KcsgCommunicateApiService.class})
+public class ApiManager implements KcsgCommunicateApiService {
     private final Logger log = getLogger(getClass());
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY)
