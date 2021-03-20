@@ -139,6 +139,7 @@ class Faucet(RyuAppBase):
                       {simple_api_name: self})
 
         Kcs.init_listip_config()
+        Kcs.set_local_ip()
         Kcs.init_version()
         ProcessFileQueue.start()
         self.scanner()
@@ -425,7 +426,7 @@ class Faucet(RyuAppBase):
     def scanner(self):
         print('read data...')
         Kcs.read_data()
-        Timer(1, self.scanner).start()
+        Timer(5, self.scanner).start()
 
 url = "/faucet/sina"
 
