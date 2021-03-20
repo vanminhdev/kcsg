@@ -182,6 +182,7 @@ class Kcs:
                 "srcIp": ip,
                 "dstIp": c["ip"],
                 "start": datetime.now().isoformat(),
+                "version": version
             }
             if ip == Kcs.local_ip:
                 log_detail["length"] = 0
@@ -255,6 +256,7 @@ class Kcs:
                 "srcIp": controller_target["ip"],
                 "dstIp": c["ip"],
                 "start": datetime.now().isoformat(),
+                "version": version_from_server
             }
             if controller_target["ip"] == Kcs.local_ip:
                 log_detail["length"] = 0

@@ -10,7 +10,7 @@ namespace KcsWriteLog.Models
         public int Id { get; set; }
         public TimeSpan ClientMetric { get; set; }
         public TimeSpan StaleMetric { get; set; }
-        public int False { get; set; }
+        public bool IsSuccess { get; set; }
         public int Overhead { get; set; }
         public DateTime Time { get; set; }
     }

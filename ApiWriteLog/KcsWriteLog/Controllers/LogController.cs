@@ -52,19 +52,36 @@ namespace KcsWriteLog.Controllers
         {
             try
             {
+                bool isSuccess = false;
                 foreach (var item in lst)
                 {
+                    if (item.IsSuccess)
+                    {
+                        isSuccess = true;
+                    }
+
                     _context.LogReads.Add(new Models.LogRead
                     {
                         LocalIp = item.LocalIp,
                         SrcIp = item.SrcIp,
                         DstIp = item.DstIp,
+                        Version = item.Version,
                         Start = item.Start,
                         End = item.End,
                         IsSuccess = item.IsSuccess,
                         Length = item.Length
                     });
                 }
+
+                _context.DataTrainings.Add(new DataTraining
+                {
+                    ClientMetric = lst.Max(o => o.End) - lst.Min(o => o.Start),
+                    StaleMetric = TimeSpan.Zero,
+                    Overhead = lst.Sum(o => o.Length),
+                    Time = DateTime.Now,
+                    IsSuccess = isSuccess,
+                });
+
                 _context.SaveChanges();
                 return Ok();
             }
@@ -87,11 +104,21 @@ namespace KcsWriteLog.Controllers
                         LocalIp = item.LocalIp,
                         SrcIp = item.SrcIp,
                         DstIp = item.DstIp,
+                        Version = item.Version,
                         Start = item.Start,
                         End = item.End,
                         Length = item.Length
                     });
                 }
+
+                _context.DataTrainings.Add(new DataTraining
+                {
+                    ClientMetric = TimeSpan.Zero,
+                    StaleMetric = lst.Max(o => o.End) - lst.Min(o => o.Start),
+                    Overhead = lst.Sum(o => o.Length),
+                    Time = DateTime.Now,
+                    IsSuccess = true
+                });
                 _context.SaveChanges();
                 return Ok();
             }

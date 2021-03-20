@@ -21,7 +21,6 @@ namespace KcsWriteLog.Models
         public virtual DbSet<Config> Configs { get; set; }
         public virtual DbSet<ControllerIp> ControllerIps { get; set; }
         public virtual DbSet<DataTraining> DataTrainings { get; set; }
-        public virtual DbSet<DataTrainning> DataTrainnings { get; set; }
         public virtual DbSet<LogRead> LogReads { get; set; }
         public virtual DbSet<LogWrite> LogWrites { get; set; }
         public virtual DbSet<VersionDatum> VersionData { get; set; }
@@ -85,13 +84,6 @@ namespace KcsWriteLog.Models
             modelBuilder.Entity<DataTraining>(entity =>
             {
                 entity.ToTable("DataTraining");
-
-                entity.Property(e => e.Time).HasColumnType("datetime");
-            });
-
-            modelBuilder.Entity<DataTrainning>(entity =>
-            {
-                entity.ToTable("DataTrainning");
 
                 entity.Property(e => e.Time).HasColumnType("datetime");
             });
