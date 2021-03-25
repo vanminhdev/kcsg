@@ -16,5 +16,9 @@
     <PackageReference Include="system.text.json" Version="5.0.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\QLearning\QLearningProject.csproj" />
+  </ItemGroup>
+
 
 </Project>

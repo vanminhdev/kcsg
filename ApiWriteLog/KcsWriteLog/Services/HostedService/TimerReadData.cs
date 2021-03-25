@@ -1,4 +1,5 @@
 ﻿using KcsWriteLog.Models;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
@@ -15,27 +16,28 @@ namespace KcsWriteLog.Services.HostedService
 {
     public class TimerReadData : IHostedService, IDisposable
     {
-        //private int executionCount = 0;
         private readonly ILogger<TimerReadData> _logger;
         private Timer _timer;
-        private KCS_DATAContext _context;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public TimerReadData(ILogger<TimerReadData> logger)
+        public TimerReadData(ILogger<TimerReadData> logger, IServiceScopeFactory scopeFactory)
         {
             _logger = logger;
-            _context = new KCS_DATAContext();
+            _scopeFactory = scopeFactory;
         }
 
         public Task StartAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("Timer read data running.");
-            _timer = new Timer(DoWorkAsync, null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
+            _timer = new Timer(DoWorkAsync, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
             return Task.CompletedTask;
         }
 
         private async void DoWorkAsync(object state)
         {
-            //var count = Interlocked.Increment(ref executionCount);
+            var scope = _scopeFactory.CreateScope();
+            var _context = scope.ServiceProvider.GetRequiredService<KCS_DATAContext>();
+
             var config = _context.Configs.OrderByDescending(o => o.Time).FirstOrDefault();
             if (config == null)
             {
@@ -55,6 +57,10 @@ namespace KcsWriteLog.Services.HostedService
             var verTarget = _context.VersionData.FirstOrDefault(o => o.Ip == targetReadIp.RemoteIp)?.Ver ?? -1;
 
             _logger.LogInformation($"target: {targetReadIp.RemoteIp}, R = {config.R}");
+
+            bool haveSuccess = false;
+            DateTime startAll = DateTime.Now;
+            DateTime endAll = DateTime.Now;
             for (int i = 0; i < config.R; i++)
             {
                 if (controllers.Count == 0)
@@ -63,11 +69,20 @@ namespace KcsWriteLog.Services.HostedService
                 }
                 int index = random.Next(controllers.Count);
                 var start = DateTime.Now;
+                if (i == 0)
+                {
+                    startAll = start;
+                }
                 var controler = controllers[index];
                 controllers.Remove(controler);
                 _logger.LogInformation($"random: {controler.RemoteIp}");
                 var isSuccess = await HandleReadDataAsync(targetReadIp.RemoteIp, verTarget, controler);
-                var end = DateTime.Now;
+                endAll = DateTime.Now;
+
+                if (isSuccess)
+                {
+                    haveSuccess = true;
+                }
 
                 _context.LogReads.Add(new LogRead
                 {
@@ -77,10 +92,22 @@ namespace KcsWriteLog.Services.HostedService
                     IsSuccess = isSuccess,
                     Length = 0,
                     Start = start,
-                    End = end,
+                    End = endAll,
                     Version = verTarget
                 });
             }
+
+            _context.DataTrainings.Add(new DataTraining
+            {
+                ClientMetric = endAll - startAll,
+                StaleMetric = TimeSpan.Zero,
+                Overhead = 0,
+                Time = DateTime.Now,
+                IsSuccess = haveSuccess,
+                R = config.R,
+                W = config.W
+            });
+            _context.SaveChanges();
         }
 
         class ResGetVer
