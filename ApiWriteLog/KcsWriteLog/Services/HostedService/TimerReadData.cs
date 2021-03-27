@@ -1,4 +1,5 @@
 ﻿using KcsWriteLog.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -24,6 +25,30 @@ namespace KcsWriteLog.Services.HostedService
         {
             _logger = logger;
             _scopeFactory = scopeFactory;
+
+            //reset r w
+            var _context = _scopeFactory.CreateScope()
+                .ServiceProvider.GetRequiredService<KCS_DATAContext>();
+
+            _context.Database.ExecuteSqlRaw("truncate table LogRead");
+            _context.Database.ExecuteSqlRaw("truncate table LogWrite");
+            _context.Database.ExecuteSqlRaw("truncate table DataTraining");
+            _context.Database.ExecuteSqlRaw("truncate table Config");
+
+            _context.Configs.Add(new Config
+            {
+                R = 0,
+                W = 0,
+                Time = DateTime.Now
+            });
+
+            //reset ver on server
+            var versions = _context.VersionData.ToList();
+            foreach (var ver in versions)
+            {
+                ver.Ver = 0;
+            }
+            _context.SaveChanges();
         }
 
         public Task StartAsync(CancellationToken stoppingToken)
@@ -42,6 +67,10 @@ namespace KcsWriteLog.Services.HostedService
             if (config == null)
             {
                 _logger.LogWarning("config is null");
+                return;
+            }
+            if (config.R == 0)
+            {
                 return;
             }
             var controllers = _context.ControllerIps.Where(o => o.IsActive != null && o.IsActive.Value).ToList();

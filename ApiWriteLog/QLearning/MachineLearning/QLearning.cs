@@ -36,20 +36,22 @@ namespace QLearningProject.MachineLearning
     {
         private Random _random = new Random();
         private double _gamma;
-        private double _epsilon;
-        private double _alpha;
-        private double _c;
-
-        private Dictionary<StateAndAction, int> _nPull = new Dictionary<StateAndAction, int>();
-
-        public int T { get; set; }
-
         public double Gamma { get => _gamma; }
+        private double _epsilon;
         public double Epsilon { get => _epsilon; }
+        private double _alpha;
         public double Alpha { get => _alpha; }
+        private double _c = 15;
 
         private double[][] _qTable;
         public double[][] QTable { get => _qTable; }
+
+        public Dictionary<StateAndAction, int> _nPull;
+        public int _t { get; set; }
+
+
+        private double T = 0.1;
+
 
         private IQLearningProblem _qLearningProblem;
         private LogState[] _logState;
@@ -59,7 +61,7 @@ namespace QLearningProject.MachineLearning
 
         public QLearning(double gamma, double epsilon, double alpha, IQLearningProblem qLearningProblem,
             int numSuccessForAction, int numRequestForAction,
-            double[][] oldQTable, LogState[] logState)
+            double[][] oldQTable, LogState[] logState, int t, Dictionary<StateAndAction, int> nPull)
         {
             _qLearningProblem = qLearningProblem;
             if (oldQTable == null)
@@ -79,8 +81,23 @@ namespace QLearningProject.MachineLearning
             _alpha = alpha;
             _logState = logState;
 
-            T = 1;
+            if (t <= 0)
+            {
+                _t = 1;
+            }
+            else
+            {
+                _t = t;
+            }
 
+            if (nPull == null)
+            {
+                _nPull = new Dictionary<StateAndAction, int>();
+            }
+            else
+            {
+                _nPull = nPull;
+            }
             this.numSuccessForAction = numSuccessForAction;
             this.numRequestForAction = numRequestForAction;
         }
@@ -101,7 +118,7 @@ namespace QLearningProject.MachineLearning
             if (initialState < 0 || initialState > _qLearningProblem.NumberOfStates) 
                 throw new ArgumentException($"The initial state can be between [0-{_qLearningProblem.NumberOfStates}", nameof(initialState));
             //return SelectAction(initialState);
-            return UCBSelectAction(T,initialState);
+            return UCBSelectAction(_t, initialState);
         }
 
         /// <summary>
@@ -135,7 +152,7 @@ namespace QLearningProject.MachineLearning
                 action = _qTable[currentState].ToList().IndexOf(qValueMax);
             }
 
-            T++; //đếm số lần pull
+            _t++; //đếm số lần pull
             return action;
         }
 
@@ -150,7 +167,7 @@ namespace QLearningProject.MachineLearning
             var bestUCB = _qTable[currentState][0] + _c * Math.Sqrt(Math.Log(t) / _nPull[sa]);
             for (int i = 1; i < 6; i++)
             {
-                sa = new StateAndAction { State = currentState, Action = i };
+                var saTemp = new StateAndAction { State = currentState, Action = i };
                 if (!_nPull.ContainsKey(sa))
                 {
                     _nPull.Add(sa, 1);
@@ -158,6 +175,7 @@ namespace QLearningProject.MachineLearning
                 var ucb = _qTable[currentState][0] + _c * Math.Sqrt(Math.Log(t) / _nPull[sa]);
                 if (ucb > bestUCB)
                 {
+                    sa = saTemp;
                     bestUCB = ucb;
                     bestAction = i;
                 }
@@ -165,6 +183,45 @@ namespace QLearningProject.MachineLearning
             _nPull[sa]++; //tăng pull lên
             return bestAction;
         }
+
+        public int SoftMaxSelectAction(int currentState)
+        {
+            List<double> ListP = new List<double>() { 0, 0, 0, 0, 0, 0 };
+            double sum = 0;
+            for (int i = 0; i < 6; i++)
+            {
+                sum += Math.Pow(Math.E, _qTable[currentState][i]) / T;
+            }
+
+            for (int i = 0; i < 6; i++)
+            {
+                ListP[i] = Math.Pow(Math.E, _qTable[currentState][i]) / T / sum;
+            }
+
+
+            List<double> SumP = new List<double>() { 0, 0, 0, 0, 0, 0 };
+            for (int i = 0; i < 6; i++)
+            {
+                double subSum = 0;
+                for(int j = 0; j < i; j++)
+                {
+                    subSum += ListP[j];
+                }
+                SumP[i] = subSum;
+            }
+
+            var randomChoose = _random.NextDouble();
+            for (int i = 0; i < 6; i++)
+            {
+                if (SumP[i] >= randomChoose)
+                {
+                    return i;
+                }
+            }
+            return 0;
+        }
+
+
 
         /// <summary>
         /// Tính value cho q table
@@ -187,7 +244,7 @@ namespace QLearningProject.MachineLearning
         {
             //random action
             //int action = SelectAction(currentState);
-            int action = UCBSelectAction(T, currentState);
+            int action = UCBSelectAction(_t, currentState);
 
             //lấy ra giá trị reward tại s và a chỉ định
             double saReward = _qLearningProblem.GetReward(currentState, action);

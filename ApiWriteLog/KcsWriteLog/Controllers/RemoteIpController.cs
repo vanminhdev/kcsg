@@ -1,4 +1,5 @@
-﻿using KcsWriteLog.Models.Request;
+﻿using KcsWriteLog.Models;
+using KcsWriteLog.Models.Request;
 using KcsWriteLog.Services.Implements;
 using KcsWriteLog.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
@@ -16,10 +17,14 @@ namespace KcsWriteLog.Controllers
     public class RemoteIpController : ControllerBase
     {
         private readonly IRemoteIpService _remoteIpService;
+        private readonly KCS_DATAContext _context;
+
         public RemoteIpController(IRemoteIpService _remoteIpService)
         {
             this._remoteIpService = _remoteIpService;
+            _context = new KCS_DATAContext();
         }
+
         [HttpGet]
         [Route("list-ip")]
         public async Task<IActionResult> GetListIp()
@@ -27,6 +32,7 @@ namespace KcsWriteLog.Controllers
             try
             {
                 string clientIp = HttpContext.Connection.RemoteIpAddress.ToString();
+                clientIp = clientIp.Replace("::ffff:", "");
                 var communcationIp = await _remoteIpService.GetCommunicationIpsAsync(clientIp);
                 var thisIp = await _remoteIpService.GetControllerIpAsync(clientIp);
 
@@ -53,6 +59,14 @@ namespace KcsWriteLog.Controllers
             {
                 return BadRequest(new { status = 1, message = ex.Message });
             }
+        }
+
+        [HttpGet]
+        [Route("get-number-controller")]
+        public IActionResult GetNumberController()
+        {
+            var count = _context.ControllerIps.Where(o => o.IsActive != null && o.IsActive.Value).Count();
+            return Ok(count);
         }
     }
 }
