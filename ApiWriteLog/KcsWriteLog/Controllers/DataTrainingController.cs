@@ -1,6 +1,7 @@
 ﻿using KcsWriteLog.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -26,8 +27,24 @@ namespace KcsWriteLog.Controllers
         [Route("get-all")]
         public IActionResult GetAll()
         {
-            var datas = _context.DataTrainings.ToList();
+            var datas = _context.DataTrainings.Select(o => new { 
+                o.Id,
+                ClientMetric = o.ClientMetric.Milliseconds,
+                StaleMetric = o.StaleMetric.Milliseconds,
+                o.Overhead,
+                o.IsSuccess,
+                o.Time
+            }).ToList();
             return Ok(datas);
+        }
+
+        [HttpDelete]
+        [Route("delete-all")]
+        public IActionResult DeleteAll()
+        {
+            _context.DataTrainings.FromSqlRaw("TRUNCATE TABLE [DataTraining]");
+            _context.SaveChanges();
+            return Ok();
         }
     }
 }

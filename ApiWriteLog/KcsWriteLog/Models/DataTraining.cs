@@ -13,5 +13,7 @@ namespace KcsWriteLog.Models
         public bool IsSuccess { get; set; }
         public int Overhead { get; set; }
         public DateTime Time { get; set; }
+        public int R { get; set; }
+        public int W { get; set; }
     }
 }

@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "VyUZ6igfLpqPon4d0cLYpk1Qwk+iJ+p20OwvjRZIDHENX2Leu1GzzV0BNpBu8U+dAM2qmaNnF++9EedeO7msHg==",
+  "success": true,
+  "projectFilePath": "D:\\work\\SDN\\kcsg\\ApiWriteLog\\QLearning\\QLearningProject.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Vanmi\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\5.0.0\\microsoft.extensions.logging.abstractions.5.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

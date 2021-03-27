@@ -1,4 +1,5 @@
 ﻿using KcsWriteLog.Models;
+using KcsWriteLog.Models.Request;
 using KcsWriteLog.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System;

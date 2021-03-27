@@ -92,6 +92,8 @@ namespace KcsWriteLog.Models
             {
                 entity.ToTable("LogRead");
 
+                entity.HasIndex(e => e.Start, "IX_LogRead_TimeStart");
+
                 entity.Property(e => e.DstIp)
                     .IsRequired()
                     .HasMaxLength(20)

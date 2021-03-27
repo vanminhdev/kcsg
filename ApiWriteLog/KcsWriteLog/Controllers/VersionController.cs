@@ -56,5 +56,18 @@ namespace KcsWriteLog.Controllers
             _context.SaveChanges();
             return Ok();
         }
+
+        [HttpPut]
+        [Route("reset-version")]
+        public IActionResult ResetVersion()
+        {
+            var versions = _context.VersionData.ToList();
+            foreach(var ver in versions)
+            {
+                ver.Ver = 0;
+            }
+            _context.SaveChanges();
+            return Ok();
+        }
     }
 }
