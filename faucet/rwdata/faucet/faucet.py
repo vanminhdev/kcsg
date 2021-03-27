@@ -142,7 +142,7 @@ class Faucet(RyuAppBase):
         Kcs.set_local_ip()
         Kcs.init_version()
         ProcessFileQueue.start()
-        self.scanner()
+        #self.scanner()
 
     @kill_on_exception(exc_logname)
     def _check_thread_exception(self):
