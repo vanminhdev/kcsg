@@ -1,4 +1,5 @@
 ﻿using KcsWriteLog.Models;
+using KcsWriteLog.Models.Request;
 using System;
 using System.Collections.Generic;
 using System.Linq;
