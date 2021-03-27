@@ -12,6 +12,7 @@ from faucet.HandleCallServer import HandleCallServer
 kinds = {
     'ONOS': 'ONOS',
     'Faucet': 'Faucet',
+    'ODL': 'ODL'
 }
 
 current_working_dir = str(pathlib.Path().absolute())
@@ -184,7 +185,7 @@ class Kcs:
                 "start": datetime.now().isoformat(),
                 "version": version
             }
-            if ip == Kcs.local_ip:
+            if ip == Kcs.local_ip and Kcs.local_ip == c["ip"]:
                 log_detail["length"] = 0
             else:
                 length = Kcs.handle_write_data(ip, version, c["ip"], c["kind"])
@@ -249,6 +250,7 @@ class Kcs:
         controllers = Kcs.get_random_members(config["r"])
 
         version_from_server = HandleCallServer.get_version_from_server(controller_target["ip"])
+        print('version_from_server', version_from_server, " ip ", controller_target["ip"])
         log_read = []
         for c in controllers:
             log_detail = {
@@ -258,11 +260,16 @@ class Kcs:
                 "start": datetime.now().isoformat(),
                 "version": version_from_server
             }
-            if controller_target["ip"] == Kcs.local_ip:
+            if controller_target["ip"] == Kcs.local_ip and Kcs.local_ip == c["ip"]:
                 log_detail["length"] = 0
                 log_detail["isSuccess"] = True
             else:
                 result = Kcs.handle_read_data(controller_target["ip"], version_from_server, c["ip"], c["kind"])
+                print("result read ", result, " ",
+                      controller_target["ip"], " ",
+                      version_from_server, " ",
+                      c["ip"], " ",
+                      c["kind"])
                 if result is not None:
                     log_detail["length"] = result["length"]
                     log_detail["isSuccess"] = result["isSuccess"]
@@ -287,11 +294,12 @@ class Kcs:
                 print('send_data: ' + send_data)
 
                 r = requests.post(url=api, data=send_data, headers=headers)
-                print('r.text: ' + r.text)
                 res = json.loads(r.text)
-                print(res)
+                print('response: ', res)
                 is_success = res["version"] == ver_from_server
-                return {"length": len(bytes(send_data)), "isSuccess": is_success}
+                result = {"length": len(bytes(send_data, 'UTF-8')), "isSuccess": is_success}
+                print('result: ', result)
+                return result
             elif kind_dst == kinds['ONOS']:
                 api = 'http://' + ip_dst + ':8181/onos/rwdata/communicate/get-version'
                 print(api)
@@ -301,10 +309,13 @@ class Kcs:
 
                 r = requests.post(url=api, data=send_data, headers=headers)
                 res = json.loads(r.text)
-                print(res)
+                print('response: ', res)
                 is_success = res["version"] == ver_from_server
-                return {"length": len(bytes(send_data)), "isSuccess": is_success}
+                result = {"length": len(bytes(send_data, 'UTF-8')), "isSuccess": is_success}
+                print('result: ', result)
+                return result
             elif kind_dst == kinds['ODL']:
+                headers["Authorization"] = "Basic YWRtaW46YWRtaW4="
                 api = 'http://' + ip_dst + ':8181/restconf/operations/sina:getVersion'
                 print(api)
                 data = {"input": {"data": json.dumps({"ip": ip_src})}}
@@ -313,9 +324,11 @@ class Kcs:
 
                 r = requests.post(url=api, data=send_data, headers=headers)
                 res = json.loads(r.text)
-                print(res)
-                is_success = res["version"] == ver_from_server
-                return {"length": len(bytes(send_data)), "isSuccess": is_success}
+                print('response: ', res)
+                is_success = (json.loads(res["output"]["result"]))["version"] == ver_from_server
+                result = {"length": len(bytes(send_data, 'UTF-8')), "isSuccess": is_success}
+                print('result: ', result)
+                return result
         except Exception as e:
-            logging.error(e)
+            print("error read: ", e.__str__())
         return

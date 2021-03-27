@@ -33,5 +33,26 @@ namespace KcsWriteLog.Controllers
             }
             return Ok(new { r = 0, w = 0 });
         }
+
+        [HttpPost]
+        [Route("set-configrw")]
+        public IActionResult SetConfigRW(int r, int w)
+        {
+            try
+            {
+                _context.Configs.Add(new Config
+                {
+                    R = r,
+                    W = w,
+                    Time = DateTime.Now
+                });
+                _context.SaveChanges();
+            }
+            catch (Exception e)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { messaga = e.Message });
+            }
+            return Ok();
+        }
     }
 }

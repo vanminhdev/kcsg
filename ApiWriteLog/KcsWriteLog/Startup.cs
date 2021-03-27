@@ -1,4 +1,5 @@
 using KcsWriteLog.Models;
+using KcsWriteLog.Services.HostedService;
 using KcsWriteLog.Services.Implements;
 using KcsWriteLog.Services.Interfaces;
 using Microsoft.AspNetCore.Builder;
@@ -10,6 +11,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.SwaggerUI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,8 +36,20 @@ namespace KcsWriteLog
                 options.UseSqlServer(Configuration.GetConnectionString("KCS_DATA"))
             );
 
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Version = "v1",
+                    Title = "SDN API"
+                });
+            });
+
             services.AddScoped<IActivityLogService, ActivityLogService>();
             services.AddScoped<IRemoteIpService, RemoteIpService>();
+
+            services.AddHostedService<TimerReadData>();
+            services.AddHostedService<TimerQLearning>();
             services.AddControllers();
         }
 
@@ -45,6 +60,14 @@ namespace KcsWriteLog
             {
                 app.UseDeveloperExceptionPage();
             }
+
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "SDN API V1");
+                c.RoutePrefix = "swagger";
+                c.DocExpansion(DocExpansion.None);
+            });
 
             app.UseHttpsRedirection();
 
