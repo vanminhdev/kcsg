@@ -78,7 +78,7 @@ public class KcsgListenerManager {
         hostService.addListener(hostListener);
         log.info("Started");
         init();
-        scheduleCommunicate();
+        //scheduleCommunicate();
     }
 
     @Deactivate
