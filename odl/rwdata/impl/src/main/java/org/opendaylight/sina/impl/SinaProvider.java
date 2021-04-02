@@ -21,8 +21,6 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.json.JSONArray;
@@ -93,7 +91,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
                 DataTreeIdentifier.create(LogicalDatastoreType.OPERATIONAL, instanceIdentifier), this);
 
         createListIpFile();
-        scheduleCommunicate();
+        //scheduleCommunicate();
     }
 
     /**
@@ -495,6 +493,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         return null;
     }
 
+    /*
     private void scheduleCommunicate() {
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
@@ -503,6 +502,8 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
             }
         }, 0, 5000);
     }
+    */
+
 
     @Override
     public ListenableFuture<RpcResult<GetVersionOutput>> getVersion(GetVersionInput input) {

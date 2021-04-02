@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using QLearningProject.MachineLearning;
 using QLearningProject.Run;
 using QLearningProject.Run.Models;
 using System;
@@ -26,6 +27,9 @@ namespace KcsWriteLog.Services.HostedService
 
         private double[][] oldRewards;
         private double[][] oldQTable;
+
+        private int t;
+        private Dictionary<StateAndAction, int> nPull;
 
         private List<LogState> _logState = new List<LogState>();
 
@@ -67,6 +71,7 @@ namespace KcsWriteLog.Services.HostedService
 
             var rangeStartForAction = rangeEnd.AddSeconds(-10);
             var logReadForAction = _context.DataTrainings.Where(o => o.Time >= rangeStartForAction && o.Time <= rangeEnd && o.ClientMetric != TimeSpan.Zero).ToList();
+            //để tính r/R
             var numSuccessForAction = logReadForAction.Where(o => o.IsSuccess).Count();
             var numRequestForAction = logReadForAction.Count();
 
@@ -76,7 +81,7 @@ namespace KcsWriteLog.Services.HostedService
             var logWriteForState = _context.DataTrainings.Where(o => o.Time >= rangeStartForState && o.Time <= rangeEnd
                 && o.StaleMetric != TimeSpan.Zero && o.StaleMetric <= TimeSpan.FromMilliseconds(100)).ToList();
 
-            if (newNumSuccess == 0 || newNumRequest == 0 || oldNumRequest == 0 || oldNumSuccess == 0)
+            if (newNumSuccess == 0 || newNumRequest == 0 || oldNumRequest == 0 || oldNumSuccess == 0 || (newNumRequest - oldNumRequest) == 0)
             {
                 return;
             }
@@ -101,10 +106,13 @@ namespace KcsWriteLog.Services.HostedService
             _logger.LogInformation($"new l1:{l1}, l2:{l2}, NOE:{NOE}");
 
             var newValue = _qLearning.Run(rwConfig.R, rwConfig.W, N, oldNumSuccess, oldNumRequest, newNumSuccess, newNumRequest,
-                l1, l2, NOE, numSuccessForAction, numRequestForAction, oldRewards, oldQTable, _logState.ToArray());
+                l1, l2, NOE, numSuccessForAction, numRequestForAction, oldRewards, oldQTable, _logState.ToArray(), t, nPull);
 
             oldRewards = newValue.rewards;
             oldQTable = newValue.qTable;
+            t = newValue.t;
+            nPull = newValue.nPull;
+
             _context.Configs.Add(new Config
             {
                 R = newValue.R,

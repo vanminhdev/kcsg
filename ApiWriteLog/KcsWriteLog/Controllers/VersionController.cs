@@ -36,6 +36,14 @@ namespace KcsWriteLog.Controllers
             return Ok(new { version = 0 });
         }
 
+        [HttpGet]
+        [Route("get-all-version")]
+        public IActionResult GetAllVersion()
+        {
+            var versions = _context.VersionData.ToList();
+            return Ok(versions);
+        }
+
         [HttpPost]
         [Route("update-version")]
         public IActionResult UpdateVersion([FromBody] UpdateVersionModel update)
