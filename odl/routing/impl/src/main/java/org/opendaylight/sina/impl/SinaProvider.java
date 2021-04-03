@@ -276,7 +276,6 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         HandleCallServer.sendLogWrite(log);
     }
 
-
     @SuppressWarnings(value = { "DM_DEFAULT_ENCODING" })
     @SuppressFBWarnings(value = { "DM_DEFAULT_ENCODING" })
     private ResultWriteModel handleWrite(String srcIp, int srcVersion, InforControllerModel desCtrller) {
@@ -504,7 +503,6 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
     }
     */
 
-
     @Override
     public ListenableFuture<RpcResult<GetVersionOutput>> getVersion(GetVersionInput input) {
         JSONObject jsonObject = new JSONObject(input.getData());
@@ -526,4 +524,6 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         builder.setResult("success");
         return RpcResultBuilder.success(builder.build()).buildFuture();
     }
+
+
 }
