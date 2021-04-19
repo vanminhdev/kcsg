@@ -37,10 +37,11 @@ namespace KcsWriteLog.Controllers
         }
 
         [HttpGet]
-        [Route("get-all-version")]
-        public IActionResult GetAllVersion()
+        [Route("get-versions")]
+        public IActionResult GetVersions()
         {
-            var versions = _context.VersionData.ToList();
+            var ips = _context.ControllerIps.Where(o => o.IsActive != null && o.IsActive.Value).Select(o => o.RemoteIp).ToList();
+            var versions = _context.VersionData.Where(o => ips.Contains(o.Ip)).Select(o => new { ip = o.Ip, version = o.Ver }).ToList();
             return Ok(versions);
         }
 

@@ -79,11 +79,43 @@ namespace KcsWriteLog.Controllers
                     StaleMetric = TimeSpan.Zero,
                     Overhead = lst.Sum(o => o.Length),
                     Time = DateTime.Now,
-                    IsSuccess = isSuccess,
+                    IsVersionSuccess = isSuccess,
                 });
 
                 _context.SaveChanges();
                 return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.ToString() });
+            }
+        }
+
+        public class LogReadTestPingModel
+        {
+            public string TargetIp { get; set; }
+            public DateTime Start { get; set; }
+            public DateTime End { get; set; }
+            public bool IsVersionSuccess { get; set; }
+        }
+
+        [Route("log-read-test-ping")]
+        [HttpPost]
+        public IActionResult LogReadTestPing([FromBody] LogReadTestPingModel logRead)
+        {
+            try
+            {
+                var log = new DataTraining
+                {
+                    ClientMetric = logRead.End - logRead.Start,
+                    StaleMetric = TimeSpan.Zero,
+                    Overhead = 0,
+                    Time = DateTime.Now,
+                    IsVersionSuccess = logRead.IsVersionSuccess
+                };
+                _context.DataTrainings.Add(log);
+                _context.SaveChanges();
+                return Ok(log.Id);
             }
             catch (Exception ex)
             {
@@ -117,7 +149,7 @@ namespace KcsWriteLog.Controllers
                     StaleMetric = lst.Max(o => o.End) - lst.Min(o => o.Start),
                     Overhead = lst.Sum(o => o.Length),
                     Time = DateTime.Now,
-                    IsSuccess = true
+                    IsVersionSuccess = true
                 });
                 _context.SaveChanges();
                 return Ok();

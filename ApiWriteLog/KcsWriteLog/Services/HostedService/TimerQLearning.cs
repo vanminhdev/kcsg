@@ -66,13 +66,13 @@ namespace KcsWriteLog.Services.HostedService
             oldNumSuccess = newNumSuccess;
             oldNumRequest = newNumRequest;
 
-            newNumSuccess += logRead.Where(o => o.IsSuccess).Count();
+            newNumSuccess += logRead.Where(o => o.IsVersionSuccess).Count();
             newNumRequest += logRead.Count();
 
             var rangeStartForAction = rangeEnd.AddSeconds(-10);
             var logReadForAction = _context.DataTrainings.Where(o => o.Time >= rangeStartForAction && o.Time <= rangeEnd && o.ClientMetric != TimeSpan.Zero).ToList();
             //để tính r/R
-            var numSuccessForAction = logReadForAction.Where(o => o.IsSuccess).Count();
+            var numSuccessForAction = logReadForAction.Where(o => o.IsVersionSuccess).Count();
             var numRequestForAction = logReadForAction.Count();
 
             var rangeStartForState = rangeEnd.AddSeconds(-10);
@@ -99,7 +99,7 @@ namespace KcsWriteLog.Services.HostedService
             }
 
             //l1 = l2 + 10; //để test
-            int NOE = (int)(logReadForState.Count(o => !o.IsSuccess) / (double)logReadForState.Count()); //số lần đọc lỗi
+            int NOE = (int)(logReadForState.Count(o => !o.IsVersionSuccess) / (double)logReadForState.Count()); //số lần đọc lỗi
 
             int N = _context.ControllerIps.Where(o => o.IsActive != null && o.IsActive.Value).Count(); //số controller
 

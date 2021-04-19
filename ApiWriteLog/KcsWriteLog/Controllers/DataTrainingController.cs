@@ -33,7 +33,7 @@ namespace KcsWriteLog.Controllers
                 ClientMetric = o.ClientMetric.Milliseconds,
                 StaleMetric = o.StaleMetric.Milliseconds,
                 o.Overhead,
-                o.IsSuccess,
+                o.IsVersionSuccess,
                 o.Time
             }).ToList();
             return Ok(datas);
@@ -56,10 +56,8 @@ namespace KcsWriteLog.Controllers
                 o.Id,
                 ClientMetric = o.ClientMetric.TotalMilliseconds,
                 StaleMetric = o.StaleMetric.TotalMilliseconds,
-                o.IsSuccess,
-                o.Time,
-                o.R,
-                o.W
+                o.IsVersionSuccess,
+                o.Time
             }).ToList();
             return Ok(datas);
         }
