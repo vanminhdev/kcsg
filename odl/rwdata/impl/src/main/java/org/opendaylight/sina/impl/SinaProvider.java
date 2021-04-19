@@ -24,6 +24,7 @@ import java.util.Collection;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import org.opendaylight.mdsal.binding.api.DataBroker;
@@ -42,7 +43,13 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.N
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.GetVersionInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.GetVersionOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.GetVersionOutputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.GetVersionsInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.GetVersionsOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.GetVersionsOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.SinaService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.TestPingInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.TestPingOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.TestPingOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.UpdateVersionInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.UpdateVersionOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.UpdateVersionOutputBuilder;
@@ -69,6 +76,9 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
     @SuppressWarnings(value = { "MS_PKGPROTECT" })
     @SuppressFBWarnings(value = { "MS_PKGPROTECT" })
     public static String SERVER_URL = null;
+    @SuppressWarnings(value = { "MS_PKGPROTECT" })
+    @SuppressFBWarnings(value = { "MS_PKGPROTECT" })
+    public static String API_MININET = null;
 
     public static final String INIT_PATH = "/home/onos/sdn";
 
@@ -117,19 +127,18 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         switch (node.getModificationType()) {
             case DELETE:
                 LOG.info(MSG, "********************** Node Remove ***************");
-                // LOG.info(MSG, "NETCONF Node: {} was removed", node.getIdentifier());
-                logChange("DELETE", requestGet());
+                LOG.info(MSG, "NETCONF Node was removed: " + node.getIdentifier());
+                //logChange("DELETE", requestGet());
                 break;
             case SUBTREE_MODIFIED:
-                // LOG.info(MSG, "****************** Node Modify
-                // ***************");
-                // LOG.info(MSG, "NETCONF Node: {} was updated", node.getIdentifier());
-                //logChange("SUBTREE_MODIFIED", requestGet());
+                // LOG.info(MSG, "****************** Node Modify ***************");
+                // LOG.info(MSG, "NETCONF Node was updated: " + node.getIdentifier());
+                // //logChange("SUBTREE_MODIFIED", requestGet());
                 break;
             case WRITE:
                 LOG.info(MSG, "********************* Node Add ************************");
-                // LOG.info(MSG, "NETCONF Node: {} was created", node.getIdentifier());
-                logChange("WRITE", requestGet());
+                LOG.info(MSG, "NETCONF Node was created: " + node.getIdentifier());
+                //logChange("WRITE", requestGet());
                 break;
             default:
                 throw new IllegalStateException("Unhandled node change" + change);
@@ -141,6 +150,8 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
 
     }
 
+    @SuppressWarnings(value = { "UPM_UNCALLED_PRIVATE_METHOD" })
+    @SuppressFBWarnings(value = { "UPM_UNCALLED_PRIVATE_METHOD" })
     private String requestGet() {
         try {
             Unirest.setTimeouts(0, 0);
@@ -186,6 +197,19 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
                 } else {
                     LOG.info(MSG, "list_ip" + response.getStatus());
                 }
+
+                HttpResponse<String> resGetAPIMininet = Unirest
+                    .get(SERVER_URL + "/api/remoteIp/get-api-mininet")
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .asString();
+
+                if (resGetAPIMininet.getStatus() == 200) {
+                    LOG.info(MSG, "api mininet " + resGetAPIMininet.getBody());
+                    API_MININET = resGetAPIMininet.getBody().replace("\"", "");
+                } else {
+                    LOG.info(MSG, "api mininet " + resGetAPIMininet.getStatus());
+                }
             } catch (UnirestException e) {
                 if (!fileListIp.exists()) {
                     wrt.write("{\n" + "\t\"localIp\": \"...\",\n"
@@ -226,8 +250,8 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         LOG.info(MSG, "myIp :" + myIpAddress + " serverUrl: " + SERVER_URL);
     }
 
-    @SuppressWarnings(value = { "IP_PARAMETER_IS_DEAD_BUT_OVERWRITTEN" })
-    @SuppressFBWarnings(value = { "IP_PARAMETER_IS_DEAD_BUT_OVERWRITTEN" })
+    @SuppressWarnings(value = { "IP_PARAMETER_IS_DEAD_BUT_OVERWRITTEN", "UPM_UNCALLED_PRIVATE_METHOD" })
+    @SuppressFBWarnings(value = { "IP_PARAMETER_IS_DEAD_BUT_OVERWRITTEN", "UPM_UNCALLED_PRIVATE_METHOD" })
     private void logChange(String eventType, String data) {
         //data = ""; //test reset
         String strJson = "{\"id\":\"" + java.util.UUID.randomUUID() + "\"," + "\"eventType\":\"" + eventType + "\","
@@ -370,7 +394,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         ConfigRWModel config = HandleCallServer.getRWConfig();
         InforControllerModel controllerTarget = HandleVersion.getRandomMember();
         int versionFromServer = HandleCallServer.getVersionFromServer(controllerTarget.getIp());
-        ArrayList<InforControllerModel> controllers = HandleVersion.getRandomMembers(config.getR());
+        ArrayList<InforControllerModel> controllers = HandleVersion.getRandomAll(config.getR());
 
         JSONArray log = new JSONArray();
         for (InforControllerModel dstController : controllers) {
@@ -524,6 +548,200 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         JSONObject jsonObject = new JSONObject(input.getData());
         HandleVersion.setVersion(jsonObject.getString("ip"), jsonObject.getInt("version"));
         builder.setResult("success");
+        return RpcResultBuilder.success(builder.build()).buildFuture();
+    }
+
+    @Override
+    public ListenableFuture<RpcResult<GetVersionsOutput>> getVersions(GetVersionsInput input) {
+        String versions = HandleVersion.getVersions();
+        GetVersionsOutputBuilder builder = new GetVersionsOutputBuilder();
+        builder.setResult(versions);
+        return RpcResultBuilder.success(builder.build()).buildFuture();
+    }
+
+    @SuppressWarnings(value = { "UPM_UNCALLED_PRIVATE_METHOD" })
+    @SuppressFBWarnings(value = { "UPM_UNCALLED_PRIVATE_METHOD" })
+    private JSONObject readDataTestPing() {
+        ConfigRWModel config = HandleCallServer.getRWConfig();
+        ArrayList<InforControllerModel> controllers = HandleVersion.getRandomMembers(config.getR() - 1);
+
+        JSONArray allVersion = new JSONArray();
+        for (InforControllerModel dstController : controllers) {
+            JSONObject getVer = handleReadTestPing(dstController);
+            if (getVer != null) {
+                allVersion.put(getVer);
+            }
+        }
+        allVersion.put(HandleVersion.getVersions());
+
+        JSONObject logDetail = new JSONObject();
+        logDetail.put("targetIp", myIpAddress);
+        logDetail.put("start", java.time.LocalDateTime.now());
+        JSONArray verFromServer = HandleCallServer.getVersionsFromServer();
+        if (verFromServer == null) {
+            return null;
+        }
+        boolean checkAllSuccess = true;
+        for (int i = 0; i < verFromServer.length(); i++) {
+            boolean checkSuccess = false;
+            String ip = verFromServer.getJSONObject(i).getString("ip");
+            int version = verFromServer.getJSONObject(i).getInt("version");
+
+            for (int j = 0; j < allVersion.length(); j++) {
+                JSONObject currJson = allVersion.getJSONObject(j);
+                try {
+                    if (currJson.getInt(ip) == version) {
+                        checkSuccess = true;
+                        break;
+                    }
+                } catch (JSONException e) {
+                    LOG.error(MSG, "error currJson");
+                }
+            }
+
+            if (!checkSuccess) {
+                checkAllSuccess = false;
+                break;
+            }
+        }
+        logDetail.put("end", java.time.LocalDateTime.now());
+        logDetail.put("isVersionSuccess", checkAllSuccess);
+
+        LOG.info(MSG, logDetail);
+        return logDetail;
+    }
+
+    @SuppressWarnings(value = { "DM_DEFAULT_ENCODING" })
+    @SuppressFBWarnings(value = { "DM_DEFAULT_ENCODING" })
+    private JSONObject handleReadTestPing(InforControllerModel desCtrller) {
+        //desCtrller.getKindController()
+        switch ("ODL") {
+            case "ONOS": {
+                try {
+                    HttpResponse<String> response = Unirest
+                        .post("http://" + desCtrller.getIp() + ":8181/onos/rwdata/communicate/get-versions")
+                        .header("Content-Type", "application/json")
+                        .header("Accept", "application/json")
+                        .header("Authorization", "Basic a2FyYWY6a2FyYWY=")
+                        .asString();
+                    if (response.getStatus() == 200) {
+                        JSONObject resBody = new JSONObject(response.getBody());
+                        return resBody;
+                    } else {
+                        LOG.warn(MSG, "read version in controller: " + desCtrller.getIp() + " with status code: "
+                            + response.getStatus());
+                    }
+                } catch (UnirestException e) {
+                    LOG.error(MSG, e.getMessage());
+                }
+                break;
+            }
+            case "Faucet": {
+                try {
+                    HttpResponse<String> response = Unirest
+                        .post("http://" + desCtrller.getIp() + ":8080/faucet/sina/versions/get-versions")
+                        .header("Content-Type", "application/json")
+                        .header("Accept", "application/json")
+                        .header("Authorization", "Basic a2FyYWY6a2FyYWY=")
+                        .asString();
+                    if (response.getStatus() == 200) {
+                        JSONObject resBody = new JSONObject(response.getBody());
+                        return resBody;
+                    } else {
+                        LOG.warn(MSG, "read version in controller: " + desCtrller.getIp() + " with status code: "
+                            + response.getStatus());
+                    }
+                } catch (UnirestException e) {
+                    LOG.error(MSG, e.getMessage());
+                }
+                break;
+            }
+            case "ODL": {
+                //" + desCtrller.getIp() + "
+                try {
+                    HttpResponse<String> response = Unirest
+                        .post("http://192.168.254.133:8181/restconf/operations/sina:getVersions")
+                        .header("Content-Type", "application/json")
+                        .header("Accept", "application/json")
+                        .header("Authorization", "Basic YWRtaW46YWRtaW4=")
+                        .asString();
+                    if (response.getStatus() == 200) {
+                        JSONObject resBody = new JSONObject(response.getBody());
+                        JSONObject outputJson = resBody.getJSONObject("output");
+                        JSONObject resultJson = new JSONObject(outputJson.getString("result"));
+
+                        LOG.info(MSG, resultJson.toString());
+                        return resultJson;
+                    } else {
+                        LOG.warn(MSG, "read version in controller: " + desCtrller.getIp() + " with status code: "
+                            + response.getStatus());
+                    }
+                } catch (UnirestException e) {
+                    LOG.error(MSG, e.getMessage());
+                }
+                break;
+            }
+            default:
+                break;
+        }
+        return null;
+    }
+
+    @Override
+    public ListenableFuture<RpcResult<TestPingOutput>> testPing(TestPingInput input) {
+        JSONObject jsonObject = new JSONObject(input.getData());
+        LOG.info(MSG, jsonObject.toString());
+        JSONObject result = new JSONObject();
+        result.put("isPingSuccess", false);
+        String src = jsonObject.getString("src");
+        String dst = jsonObject.getString("dst");
+        JSONObject testPing = new JSONObject();
+        testPing.put("src", src);
+        testPing.put("dst", dst);
+        JSONObject logDetail = readDataTestPing();
+        String id = "";
+        if (logDetail != null) {
+            try {
+                HttpResponse<String> response = Unirest
+                    .post("http://" + SERVER_URL + "/api/Log/log-read-test-ping")
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .body(logDetail)
+                    .asString();
+                if (response.getStatus() == 200) {
+                    LOG.info(MSG, "write log test ping success");
+                    id = response.getBody();
+                    result.put("id", id);
+                } else {
+                    LOG.warn(MSG, response.getBody());
+                }
+            } catch (UnirestException e) {
+                LOG.error(MSG, e.getMessage());
+            }
+
+            if (logDetail.getBoolean("isVersionSuccess")) {
+                try {
+                    HttpResponse<String> response = Unirest
+                        .post(API_MININET + "/forwarding")
+                        .header("Content-Type", "application/json")
+                        .header("Accept", "application/json")
+                        .body(testPing)
+                        .asString();
+                    if (response.getStatus() == 200) {
+                        if (response.getBody().equals("True")) {
+                            result.put("isPingSuccess", true);
+                        }
+                    } else {
+                        LOG.warn(MSG, "call api mininet with status code: "
+                            + response.getStatus());
+                    }
+                } catch (UnirestException e) {
+                    LOG.error(MSG, e.getMessage());
+                }
+            }
+        }
+        TestPingOutputBuilder builder = new TestPingOutputBuilder();
+        builder.setResult(result.toString());
         return RpcResultBuilder.success(builder.build()).buildFuture();
     }
 }

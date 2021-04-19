@@ -37,76 +37,12 @@ and is available at http://www.eclipse.org/legal/epl-v10.html INTERNAL
         <scope>import</scope>
       </dependency>
       <dependency>
-          <groupId>org.opendaylight.netconf</groupId>
-          <artifactId>odl-restconf-nb-bierman02</artifactId>
-          <version>1.13.1</version>
-      </dependency>
-      <dependency>
-          <groupId>org.opendaylight.netconf</groupId>
-          <artifactId>odl-restconf-nb-rfc8040</artifactId>
-          <version>1.13.1</version>
-      </dependency>
-      <dependency>
-          <groupId>org.opendaylight.netconf</groupId>
-          <artifactId>odl-netconf-connector-all</artifactId>
-          <version>1.7.4</version>
-      </dependency>
-      <dependency>
         <groupId>org.opendaylight.netconf</groupId>
-        <artifactId>odl-netconf-topology</artifactId>
-        <version>1.13.1</version>
+        <artifactId>odl-restconf-all</artifactId>
+        <version>1.7.0</version>
+        <classifier>features</classifier>
+        <type>xml</type>
       </dependency>
-      <dependency>
-        <groupId>org.opendaylight.netconf</groupId>
-        <artifactId>odl-restconf</artifactId>
-        <version>1.13.1</version>
-      </dependency>
-      <!-- <dependency>
-        <groupId>org.opendaylight.netconf</groupId>
-        <artifactId>odl-netconf-clustered-topology</artifactId>
-        <version>1.8.3</version>
-      </dependency> -->
-      <!-- <dependency>
-        <groupId>org.opendaylight.netconf</groupId>
-        <artifactId>odl-mdsal-apidocs</artifactId>
-        <version>1.13.1</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.dlux</groupId>
-        <artifactId>features-dlux</artifactId>
-        <version>0.9.2</version>
-      </dependency>
-      <dependency>
-          <groupId>org.opendaylight.dluxapps</groupId>
-          <artifactId>odl-dluxapps-nodes</artifactId>
-          <version>0.7.4</version>
-      </dependency>
-      <dependency>
-          <groupId>org.opendaylight.dluxapps</groupId>
-          <artifactId>odl-dluxapps-topology</artifactId>
-          <version>0.7.4</version>
-      </dependency>
-      <dependency>
-          <groupId>org.opendaylight.dluxapps</groupId>
-          <artifactId>odl-dluxapps-yangui</artifactId>
-          <version>0.7.4</version>
-      </dependency>
-      <dependency>
-          <groupId>org.opendaylight.dluxapps</groupId>
-          <artifactId>odl-dluxapps-yangvisualizer</artifactId>
-          <version>0.7.4</version>
-      </dependency>
-      <dependency>
-          <groupId>org.opendaylight.dluxapps</groupId>
-          <artifactId>odl-dluxapps-yangman</artifactId>
-          <version>0.7.4</version>
-      </dependency> -->
-
-      <!-- <dependency>
-          <groupId>org.opendaylight.mdsal.model</groupId>
-          <artifactId>odl-mdsal-model-draft-bierman-netconf-restconf-02</artifactId>
-          <version>2.0.17</version>
-      </dependency> -->
     </dependencies>
   </dependencyManagement>
 
@@ -118,7 +54,6 @@ and is available at http://www.eclipse.org/legal/epl-v10.html INTERNAL
       <artifactId>framework</artifactId>
       <type>kar</type>
     </dependency>
-
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>features-sina</artifactId>
