@@ -1,4 +1,4 @@
-#!/home/faucet/faucet/venv/bin/python
+#!/home/faucet/kcsg/faucet/AntiEntropy/venv/bin/python
 # EASY-INSTALL-ENTRY-SCRIPT: 'scapy==2.4.4','console_scripts','UTscapy'
 import re
 import sys

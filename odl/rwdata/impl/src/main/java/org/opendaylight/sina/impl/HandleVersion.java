@@ -389,8 +389,23 @@ public final class HandleVersion {
         return memberList.get(index);
     }
 
-    public static ArrayList<InforControllerModel> getRandomMembers(int numMem) {
+    public static ArrayList<InforControllerModel> getRandomAll(int numMem) {
         ArrayList<InforControllerModel> memberList = getAllController();
+        ArrayList<InforControllerModel> result = new ArrayList<InforControllerModel>();
+        for (int i = 0; i < numMem; i++) {
+            int size = memberList.size();
+            if (size > 0) {
+                Random rand = new Random();
+                int index = rand.nextInt(size);
+                result.add(memberList.get(index));
+                memberList.remove(index);
+            }
+        }
+        return result;
+    }
+
+    public static ArrayList<InforControllerModel> getRandomMembers(int numMem) {
+        ArrayList<InforControllerModel> memberList = getMembers();
         ArrayList<InforControllerModel> result = new ArrayList<InforControllerModel>();
         for (int i = 0; i < numMem; i++) {
             int size = memberList.size();

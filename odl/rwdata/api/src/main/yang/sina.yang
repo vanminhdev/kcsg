@@ -20,7 +20,28 @@ module sina {
         }
     }
 
+    rpc getVersions {
+        output {
+            leaf result {
+                type string;
+            }
+        }
+    }
+
     rpc updateVersion {
+        input {
+            leaf data {
+                type string;
+            }
+        }
+        output {
+            leaf result {
+                type string;
+            }
+        }
+    }
+
+    rpc testPing {
         input {
             leaf data {
                 type string;

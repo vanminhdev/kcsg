@@ -85,6 +85,14 @@ namespace KcsWriteLog.Models
             {
                 entity.ToTable("DataTraining");
 
+                entity.Property(e => e.HostDst)
+                    .HasMaxLength(5)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.HostSrc)
+                    .HasMaxLength(5)
+                    .IsUnicode(false);
+
                 entity.Property(e => e.Time).HasColumnType("datetime");
             });
 

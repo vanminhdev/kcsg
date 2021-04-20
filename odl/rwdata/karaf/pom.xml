@@ -36,6 +36,13 @@ and is available at http://www.eclipse.org/legal/epl-v10.html INTERNAL
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+      <dependency>
+        <groupId>org.opendaylight.netconf</groupId>
+        <artifactId>odl-restconf-all</artifactId>
+        <version>1.7.0</version>
+        <classifier>features</classifier>
+        <type>xml</type>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -47,7 +54,6 @@ and is available at http://www.eclipse.org/legal/epl-v10.html INTERNAL
       <artifactId>framework</artifactId>
       <type>kar</type>
     </dependency>
-
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>features-sina</artifactId>

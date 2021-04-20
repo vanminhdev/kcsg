@@ -132,9 +132,7 @@ namespace KcsWriteLog.Services.HostedService
                 StaleMetric = TimeSpan.Zero,
                 Overhead = 0,
                 Time = DateTime.Now,
-                IsSuccess = haveSuccess,
-                R = config.R,
-                W = config.W
+                IsVersionSuccess = haveSuccess
             });
             _context.SaveChanges();
         }

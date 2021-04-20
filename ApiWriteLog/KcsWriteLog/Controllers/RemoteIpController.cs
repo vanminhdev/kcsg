@@ -4,6 +4,7 @@ using KcsWriteLog.Services.Implements;
 using KcsWriteLog.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -18,11 +19,13 @@ namespace KcsWriteLog.Controllers
     {
         private readonly IRemoteIpService _remoteIpService;
         private readonly KCS_DATAContext _context;
+        private readonly IConfiguration _configuration;
 
-        public RemoteIpController(IRemoteIpService _remoteIpService)
+        public RemoteIpController(IRemoteIpService _remoteIpService, IConfiguration configuration)
         {
             this._remoteIpService = _remoteIpService;
             _context = new KCS_DATAContext();
+            _configuration = configuration;
         }
 
         [HttpGet]
@@ -67,6 +70,22 @@ namespace KcsWriteLog.Controllers
         {
             var count = _context.ControllerIps.Where(o => o.IsActive != null && o.IsActive.Value).Count();
             return Ok(count);
+        }
+
+        [HttpGet]
+        [Route("get-api-mininet")]
+        public IActionResult GetAPIMininet()
+        {
+            var api = _configuration.GetValue<string>("ApiMininet");
+            return Ok(api);
+        }
+    
+        [HttpGet]
+        [Route("get-list-controller")]
+        public IActionResult GetListController()
+        {
+            var lstContrller = _context.ControllerIps.Where(o => o.IsActive != null && o.IsActive.Value).Select(o => new { ip = o.RemoteIp, type = o.ControllerType}).ToList();
+            return Ok(lstContrller);
         }
     }
 }
