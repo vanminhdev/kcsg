@@ -1,1 +1,1 @@
-{"localIp":"192.168.254.130","controller":"","communication":[{"ip":"192.168.50.132","controller":"ODL"},{"ip":"192.168.50.131","controller":"ONOS"},{"ip":"192.168.50.140","controller":"Faucet"}]}
+{"localIp":"192.168.254.130","controller":"","communication":[{"ip":"192.168.254.142","controller":"ODL"},{"ip":"192.168.254.128","controller":"ONOS"},{"ip":"192.168.50.140","controller":"Faucet"}]}

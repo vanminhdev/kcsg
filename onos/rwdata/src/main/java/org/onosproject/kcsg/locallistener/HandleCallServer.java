@@ -47,6 +47,22 @@ public final class HandleCallServer {
         return 0;
     }
 
+    public static JSONArray getVersionsFromServer() {
+        try {
+            HttpResponse<String> response = Unirest
+                .get(serverUrl + "/api/version/get-versions")
+                .header("Content-Type", "application/json")
+                .header("Accept", "application/json")
+                .asString();
+
+            JSONArray resBody = new JSONArray(response.getBody());
+            return resBody;
+        } catch (UnirestException e) {
+            //LOG.error(MSG, e.getMessage());
+        }
+        return null;
+    }
+
     public static void updateVersion(JSONObject body) {
         try {
             HttpResponse<String> response = Unirest

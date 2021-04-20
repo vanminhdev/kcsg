@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -65,5 +66,40 @@ public class CommunicateApi extends BaseResource {
             log.error(e.getMessage());
             return Response.status(500).build();
         }
+    }
+
+    /**
+     * get version.
+     * @return response code OK
+     */
+    @GET
+    @Path("get-versions")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response readVesions() {
+        try {
+            return Response.ok(HandleVersion.getVersions()).build();
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            return Response.status(500).build();
+        }
+    }
+
+    /**
+     * get version.
+     * @param input input
+     * @return response code OK
+     */
+    @POST
+    @Path("test-ping")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response testPing(String input) {
+        JSONObject jsonObject = new JSONObject(input);
+        log.info("Test ping " + jsonObject.toString());
+        String src = jsonObject.getString("src");
+        String dst = jsonObject.getString("dst");
+
+        KcsgCommunicateApiService service = get(KcsgCommunicateApiService.class);
+        JSONObject result = service.testPing(src, dst);
+        return Response.ok(result.toString()).build();
     }
 }
