@@ -572,7 +572,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
                 allVersion.put(getVer);
             }
         }
-        allVersion.put(HandleVersion.getVersions());
+        allVersion.put(new JSONObject(HandleVersion.getVersions()));
 
         JSONObject logDetail = new JSONObject();
         logDetail.put("targetIp", myIpAddress);
@@ -615,17 +615,17 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
     @SuppressFBWarnings(value = { "DM_DEFAULT_ENCODING" })
     private JSONObject handleReadTestPing(InforControllerModel desCtrller) {
         //desCtrller.getKindController()
-        switch ("ODL") {
+        switch ("ONOS") {
             case "ONOS": {
                 try {
+                    //" + desCtrller.getIp() + "
                     HttpResponse<String> response = Unirest
-                        .post("http://" + desCtrller.getIp() + ":8181/onos/rwdata/communicate/get-versions")
-                        .header("Content-Type", "application/json")
-                        .header("Accept", "application/json")
+                        .get("http://192.168.254.128:8181/onos/rwdata/communicate/get-versions")
                         .header("Authorization", "Basic a2FyYWY6a2FyYWY=")
                         .asString();
                     if (response.getStatus() == 200) {
                         JSONObject resBody = new JSONObject(response.getBody());
+                        LOG.info(MSG, "get ver onos " + resBody.toString());
                         return resBody;
                     } else {
                         LOG.warn(MSG, "read version in controller: " + desCtrller.getIp() + " with status code: "
@@ -639,13 +639,14 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
             case "Faucet": {
                 try {
                     HttpResponse<String> response = Unirest
-                        .post("http://" + desCtrller.getIp() + ":8080/faucet/sina/versions/get-versions")
+                        .get("http://" + desCtrller.getIp() + ":8080/faucet/sina/versions/get-versions")
                         .header("Content-Type", "application/json")
                         .header("Accept", "application/json")
                         .header("Authorization", "Basic a2FyYWY6a2FyYWY=")
                         .asString();
                     if (response.getStatus() == 200) {
                         JSONObject resBody = new JSONObject(response.getBody());
+                        LOG.info(MSG, "get ver faucet " + resBody.toString());
                         return resBody;
                     } else {
                         LOG.warn(MSG, "read version in controller: " + desCtrller.getIp() + " with status code: "
@@ -670,7 +671,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
                         JSONObject outputJson = resBody.getJSONObject("output");
                         JSONObject resultJson = new JSONObject(outputJson.getString("result"));
 
-                        LOG.info(MSG, resultJson.toString());
+                        LOG.info(MSG, "get ver odl " + resultJson.toString());
                         return resultJson;
                     } else {
                         LOG.warn(MSG, "read version in controller: " + desCtrller.getIp() + " with status code: "
@@ -703,7 +704,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         if (logDetail != null) {
             try {
                 HttpResponse<String> response = Unirest
-                    .post("http://" + SERVER_URL + "/api/Log/log-read-test-ping")
+                    .post(SERVER_URL + "/api/Log/log-read-test-ping")
                     .header("Content-Type", "application/json")
                     .header("Accept", "application/json")
                     .body(logDetail)
