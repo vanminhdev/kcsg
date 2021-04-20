@@ -14,15 +14,7 @@ namespace QLearningProject.Problems
         public int NumberOfStates => svalue.Length;
         public int NumberOfActions => 6;
 
-        private int numSuccessForAction;
-        private int numRequestForAction;
-
-        private int l1;
-        private int l2;
-        private int NOE;
-
-        public SDNProblem(int numSuccessForAction, int numRequestForAction,
-            int l1, int l2, int NOE, double[][] oldRewards)
+        public SDNProblem(double[][] oldRewards)
         {
             int val = 0;
             for (int i = 0; i < 100; i++)
@@ -37,13 +29,6 @@ namespace QLearningProject.Problems
                     }
                 }
             }
-
-            this.numSuccessForAction = numSuccessForAction;
-            this.numRequestForAction = numRequestForAction;
-
-            this.l1 = l1;
-            this.l2 = l2;
-            this.NOE = NOE;
 
             if (oldRewards == null)
             {
@@ -76,28 +61,6 @@ namespace QLearningProject.Problems
         public double GetReward(int currentState, int action)
         {
             return rewards[currentState][action];
-        }
-
-        public int[] GetValidActions(int currentState)
-        {
-            List<int> validActions = new List<int>();
-            var div = numSuccessForAction / (double)numRequestForAction;
-            if (div <= 0.5)
-            {
-                validActions.Add(0); //w + 2
-                validActions.Add(1); //r + 2
-            }
-            else if (div > 0.5 && div < 1)
-            {
-                validActions.Add(2); //w + 1
-                validActions.Add(3); //r + 1
-            }
-            else //== 1
-            {
-                validActions.Add(4); //w - 1
-                validActions.Add(5); //r - 1
-            }
-            return validActions.ToArray();
         }
 
         public string ShowReward()

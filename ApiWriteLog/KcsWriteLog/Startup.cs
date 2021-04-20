@@ -48,13 +48,14 @@ namespace KcsWriteLog
             services.AddScoped<IActivityLogService, ActivityLogService>();
             services.AddScoped<IRemoteIpService, RemoteIpService>();
 
-            services.AddHostedService<TimerReadData>();
-            services.AddHostedService<TimerQLearning>();
+            //services.AddHostedService<TimerReadData>();
+            //services.AddHostedService<TimerQLearning>();
+            //services.AddHostedService<TimerTestPing>();
             services.AddControllers();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
         {
             if (env.IsDevelopment())
             {
@@ -68,6 +69,9 @@ namespace KcsWriteLog
                 c.RoutePrefix = "swagger";
                 c.DocExpansion(DocExpansion.None);
             });
+
+            var loggingOptions = Configuration.GetSection("Log4NetCore").Get<Log4NetProviderOptions>();
+            loggerFactory.AddLog4Net(loggingOptions);
 
             app.UseHttpsRedirection();
 

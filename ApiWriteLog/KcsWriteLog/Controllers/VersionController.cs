@@ -36,6 +36,15 @@ namespace KcsWriteLog.Controllers
             return Ok(new { version = 0 });
         }
 
+        [HttpGet]
+        [Route("get-versions")]
+        public IActionResult GetVersions()
+        {
+            var ips = _context.ControllerIps.Where(o => o.IsActive != null && o.IsActive.Value).Select(o => o.RemoteIp).ToList();
+            var versions = _context.VersionData.Where(o => ips.Contains(o.Ip)).Select(o => new { ip = o.Ip, version = o.Ver }).ToList();
+            return Ok(versions);
+        }
+
         [HttpPost]
         [Route("update-version")]
         public IActionResult UpdateVersion([FromBody] UpdateVersionModel update)

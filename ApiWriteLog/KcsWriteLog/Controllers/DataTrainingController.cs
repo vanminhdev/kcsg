@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -32,7 +33,7 @@ namespace KcsWriteLog.Controllers
                 ClientMetric = o.ClientMetric.Milliseconds,
                 StaleMetric = o.StaleMetric.Milliseconds,
                 o.Overhead,
-                o.IsSuccess,
+                o.IsVersionSuccess,
                 o.Time
             }).ToList();
             return Ok(datas);
@@ -45,6 +46,20 @@ namespace KcsWriteLog.Controllers
             _context.DataTrainings.FromSqlRaw("TRUNCATE TABLE [DataTraining]");
             _context.SaveChanges();
             return Ok();
+        }
+
+        [HttpGet]
+        [Route("get-data-from-time")]
+        public IActionResult GetDataFromTime([Required] DateTime? fromTime)
+        {
+            var datas = _context.DataTrainings.Where(o => o.Time >= fromTime).Select(o => new { 
+                o.Id,
+                ClientMetric = o.ClientMetric.TotalMilliseconds,
+                StaleMetric = o.StaleMetric.TotalMilliseconds,
+                o.IsVersionSuccess,
+                o.Time
+            }).ToList();
+            return Ok(datas);
         }
     }
 }

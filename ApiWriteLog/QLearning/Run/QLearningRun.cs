@@ -18,15 +18,15 @@ namespace QLearningProject.Run
 
         public RWValue Run(int r, int w, int N, int oldNumSuccess, int oldNumRequest, int newNumSuccess, int newNumRequest,
             int l1, int l2, int NOE, int numSuccessForAction, int numRequestForAction, double[][] oldRewards, double[][] oldQTable,
-            LogState[] logState)
+            LogState[] logState, int t, Dictionary<StateAndAction, int> nPull)
         {
             LogState lastState = null;
             if (logState.Length > 0)
             {
                 lastState = logState[^1];
             }
-            var problem = new SDNProblem(numSuccessForAction, numRequestForAction, l1, l2, NOE, oldRewards);
-            var qLearning = new QLearning(0.8, 0.5, 0.6, problem, numSuccessForAction, numRequestForAction, oldQTable, logState);
+            var problem = new SDNProblem(oldRewards);
+            var qLearning = new QLearning(0.8, 0.5, 0.6, problem, numSuccessForAction, numRequestForAction, oldQTable, logState, t, nPull);
 
             //update reward
             var newReward = Math.Round((newNumSuccess - oldNumSuccess) / (double)(newNumRequest - oldNumRequest) * 100);
@@ -39,7 +39,7 @@ namespace QLearningProject.Run
             {
                 int state = problem.GetState(l1, l2, NOE);
                 //int action = qLearning.SelectAction(state);
-                int action = qLearning.UCBSelectAction(qLearning.T, state);
+                int action = qLearning.UCBSelectAction(qLearning._t, state);
                 problem.rewards[state][action] = newReward;
             }
 
@@ -110,7 +110,9 @@ namespace QLearningProject.Run
                 W = w,
                 Action = newAction,
                 rewards = problem.rewards,
-                qTable = qLearning.QTable
+                qTable = qLearning.QTable,
+                t = qLearning._t,
+                nPull = qLearning._nPull
             };
             return rwValue;
         }
