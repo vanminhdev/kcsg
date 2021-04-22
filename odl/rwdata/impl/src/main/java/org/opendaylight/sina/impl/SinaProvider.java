@@ -574,10 +574,15 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         }
         allVersion.put(new JSONObject(HandleVersion.getVersions()));
 
+        LOG.info(MSG, "all version " + allVersion.toString());
+
         JSONObject logDetail = new JSONObject();
         logDetail.put("targetIp", myIpAddress);
         logDetail.put("start", java.time.LocalDateTime.now());
         JSONArray verFromServer = HandleCallServer.getVersionsFromServer();
+
+        LOG.info(MSG, "version from server " + verFromServer);
+
         if (verFromServer == null) {
             return null;
         }
@@ -614,13 +619,11 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
     @SuppressWarnings(value = { "DM_DEFAULT_ENCODING" })
     @SuppressFBWarnings(value = { "DM_DEFAULT_ENCODING" })
     private JSONObject handleReadTestPing(InforControllerModel desCtrller) {
-        //desCtrller.getKindController()
-        switch ("ONOS") {
+        switch (desCtrller.getKindController()) {
             case "ONOS": {
                 try {
-                    //" + desCtrller.getIp() + "
                     HttpResponse<String> response = Unirest
-                        .get("http://192.168.254.128:8181/onos/rwdata/communicate/get-versions")
+                        .get("http://" + desCtrller.getIp() + ":8181/onos/rwdata/communicate/get-versions")
                         .header("Authorization", "Basic a2FyYWY6a2FyYWY=")
                         .asString();
                     if (response.getStatus() == 200) {
@@ -658,10 +661,9 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
                 break;
             }
             case "ODL": {
-                //" + desCtrller.getIp() + "
                 try {
                     HttpResponse<String> response = Unirest
-                        .post("http://192.168.254.133:8181/restconf/operations/sina:getVersions")
+                        .post("http://" + desCtrller.getIp() + ":8181/restconf/operations/sina:getVersions")
                         .header("Content-Type", "application/json")
                         .header("Accept", "application/json")
                         .header("Authorization", "Basic YWRtaW46YWRtaW4=")
