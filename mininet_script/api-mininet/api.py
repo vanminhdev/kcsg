@@ -1,6 +1,7 @@
 from flask import Flask, request
 import json
 import os
+from threading import Timer
  
 from mininet.net import Mininet
 from mininet.node import Controller, RemoteController
@@ -16,7 +17,10 @@ os.system("sudo mn -c")
 n_controllers = 9
 
 #Domain Controller
-Domain=['192.168.254.128', '192.168.254.128', '192.168.254.128', '192.168.254.128', '192.168.254.128', '192.168.254.128', '192.168.254.128', '192.168.254.128', '192.168.254.128', '192.168.254.128']
+Domain=['192.168.254.128', '192.168.254.128', '192.168.254.128', '192.168.254.128',
+        '192.168.254.128', '192.168.254.128', '192.168.254.128', '192.168.254.128',
+        '192.168.254.128']
+#Domain=['192.168.254.128', '192.168.254.128']
 
 net = Mininet( topo=None, build=False)
 
@@ -28,39 +32,39 @@ for index in range(0, n_controllers):
     controllers[controller_name] = controller 
 
 hosts = {}
-# Create nodes
+switches = {}
+# Create network
 for index in range(0, n_controllers):
     # add 2 hosts for each controller
-    host_name = "h" + str(index * 2 + 1)
-    host = net.addHost(host_name)
-    hosts[host_name] = host
+    host_name1 = "h" + str(index * 2 + 1)
+    host1 = net.addHost(host_name1)
+    hosts[host_name1] = host1
 
-    host_name = "h" + str(index * 2 + 2)
-    host = net.addHost(host_name)
-    hosts[host_name] = host
+    host_name2 = "h" + str(index * 2 + 2)
+    host2 = net.addHost(host_name2)
+    hosts[host_name2] = host2
 
-switches = {}
-prev_switch = None
-# Create switches
-for index in range(0, n_controllers):
-    # add 2 switches for each controller
-    switch_name = "s" + str(index * 2 + 1)
-    switch = net.addSwitch(switch_name)
-    switches[switch_name] = switch
-    # add link
-    host_name = "h" + str(index * 2 + 1)
-    net.addLink(hosts[host_name], switch)
-    if prev_switch != None:
-        net.addLink(switch, prev_switch)
+    #add 2 switches
+    switch_name1 = "s" + str(index * 2 + 1)
+    switch1 = net.addSwitch(switch_name1)
+    switches[switch_name1] = switch1
 
-    switch_name = "s" + str(index * 2 + 2)
-    switch = net.addSwitch(switch_name)
-    prev_switch = switch
-    switches[switch_name] = switch
-    # add link
-    host_name = "h" + str(index * 2 + 2)
-    net.addLink(hosts[host_name], switch)
-net.addLink(prev_switch, switches["s1"])
+    switch_name2 = "s" + str(index * 2 + 2)
+    switch2 = net.addSwitch(switch_name2)
+    switches[switch_name2] = switch2
+
+    net.addLink(hosts[host_name1], switch1)
+    net.addLink(hosts[host_name2], switch2)
+
+    print(switch_name1, switch_name2)
+    net.addLink(switch1, switch2)
+
+    if index >= 1:
+        prev_switch = switches["s" + str((index - 1) * 2 + 2)]
+        net.addLink(prev_switch, switch1)
+
+    if index == n_controllers - 1:
+        net.addLink(switch2, switches["s1"])
 
 net.build()
 
@@ -71,6 +75,29 @@ for index in range(0, n_controllers):
     switch.start([controller])
     switch = switches["s" + str(index * 2 + 2)]
     switch.start([controller])
+
+#change network
+commands = [
+    {
+        'value': "net.configLinkStatus('s1', 's2', 'down')",
+    },
+    {
+        'value': "net.configLinkStatus('s1', 's2', 'up')",
+    }
+]
+
+is_continue = True
+
+index_cmd = 0
+
+def change_network():
+    cmd = commands[index_cmd]['value']
+    print('%s'%(cmd))
+    exec(cmd)
+    print('Done')
+    Timer(5, change_network).start()
+
+change_network()
 
 def get_links(net):
     data = {}
@@ -119,9 +146,7 @@ def add_flow(links, path):
 
 app = Flask(__name__)
 
-@app.route('/', methods=['GET'])
-def hello_world():
-    return str(s1.cmd('ifconfig'))
+print('topo: ', get_links(net))
 
 @app.route('/save-topo/<ip>', methods=['POST'])
 def save_topo(ip):
