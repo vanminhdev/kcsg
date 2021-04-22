@@ -49,16 +49,44 @@ class Kcs:
             controllers.append(new_member)
         return controllers
 
+    # get all member
     @staticmethod
-    def get_random_member():
+    def get_all_member():
+        controllers = []
+        if not os.path.isfile(Kcs.file_path['listip']):
+            return controllers
+        f = open(Kcs.file_path['listip'], 'r')
+        info = json.load(f)
+        f.close()
+        communication = info['communication']
+        for member in communication:
+            new_member = {
+                'ip': member['ip'],
+                'kind': member['controller']
+            }
+            controllers.append(new_member)
+        return controllers
+
+    @staticmethod
+    def get_random_all_controller():
         controllers = Kcs.get_all_controller()
         if len(controllers) > 1:
             return random.sample(controllers, 1)[0]
         return
 
+    # random all
+    @staticmethod
+    def get_random_all_controllers(num):
+        controllers = Kcs.get_all_controller()
+        if num > len(controllers):
+            num = len(controllers)
+        random_list = random.sample(controllers, num)
+        return random_list
+
+    # random member
     @staticmethod
     def get_random_members(num):
-        controllers = Kcs.get_all_controller()
+        controllers = Kcs.get_all_member()
         if num > len(controllers):
             num = len(controllers)
         random_list = random.sample(controllers, num)
@@ -114,6 +142,15 @@ class Kcs:
             return versions[ip] if ip in versions else 0
         return 0
 
+    # lay toan bo version
+    @staticmethod
+    def get_versions():
+        if os.path.isfile(Kcs.file_path['version']):
+            with open(Kcs.file_path['version'], 'r') as f:
+                versions = json.load(f)
+            return versions
+        return {}
+
     @staticmethod
     def set_version(ip, version):
         versions = {}
@@ -162,9 +199,19 @@ class Kcs:
             f.write(json.dumps(versions))
 
     @staticmethod
+    def get_api_mininet():
+        config = {
+            "apiMininet": ''
+        }
+        if os.path.isfile(Kcs.file_path['config']):
+            with open(Kcs.file_path['config'], 'r') as f:
+                config = json.load(f)
+        return config["apiMininet"]
+
+    @staticmethod
     def get_server_url():
         config = {
-            'serverUrl': 'http://192.168.43.176:8085'
+            'serverUrl': ''
         }
         print(Kcs.file_path['config'])
         if os.path.isfile(Kcs.file_path['config']):
@@ -246,8 +293,8 @@ class Kcs:
     def read_data():
         config = HandleCallServer.get_rw_config()
 
-        controller_target = Kcs.get_random_member()
-        controllers = Kcs.get_random_members(config["r"])
+        controller_target = Kcs.get_random_all_controller()
+        controllers = Kcs.get_random_all_controllers(config["r"])
 
         version_from_server = HandleCallServer.get_version_from_server(controller_target["ip"])
         print('version_from_server', version_from_server, " ip ", controller_target["ip"])
@@ -332,3 +379,75 @@ class Kcs:
         except Exception as e:
             print("error read: ", e.__str__())
         return
+
+    @staticmethod
+    def read_data_test_ping():
+        config = HandleCallServer.get_rw_config()
+        controllers = Kcs.get_random_members(config["r"])
+
+        versions_from_server = HandleCallServer.get_versions_from_server()
+        print('versions_from_server ', versions_from_server)
+        all_version = []
+        log_detail = {
+            "targetIp": Kcs.local_ip,
+            "start": datetime.now().isoformat(),
+        }
+        for c in controllers:
+            version = Kcs.handle_read_data_test_ping(c["ip"], c["kind"])
+            all_version.append(version)
+        log_detail["end"] = datetime.now().isoformat()
+
+        print("all version ", all_version)
+
+        check_all_success = True
+        for ver_fr_server in versions_from_server:
+            check_success = False
+            ip = ver_fr_server["ip"]
+            ver = ver_fr_server["version"]
+            for vers_in_all in all_version:
+                try:
+                    if vers_in_all[ip] == ver:
+                        check_success = True
+                        break
+                except:
+                    print("cannot get ver of ip ", ver_fr_server["ip"])
+
+            if not check_success:
+                check_all_success = False
+        log_detail["isVersionSuccess"] = check_all_success
+        return log_detail
+
+    @staticmethod
+    def handle_read_data_test_ping(ip_dst, kind_dst):
+        headers = {"Authorization": "Basic a2FyYWY6a2FyYWY=",
+                   "Content-Type": "application/json;",
+                   "Accept": "application/json;"}
+        try:
+            if kind_dst == kinds['Faucet']:
+                api = 'http://' + ip_dst + ':8080/faucet/sina/versions/get-versions'
+                print(api)
+                r = requests.get(url=api, headers=headers)
+                print('get ver faucet: ', r.status_code, " ", r.text)
+                res = json.loads(r.text)
+                return res
+            elif kind_dst == kinds['ONOS']:
+                api = 'http://' + ip_dst + ':8181/onos/rwdata/communicate/get-versions'
+                print(api)
+                headers_onos = {"Authorization": "Basic a2FyYWY6a2FyYWY="}
+                r = requests.get(url=api, headers=headers_onos)
+                print('get ver onos: ', r.status_code, " ", r.text)
+                res = json.loads(r.text)
+                return res
+            elif kind_dst == kinds['ODL']:
+                headers["Authorization"] = "Basic YWRtaW46YWRtaW4="
+                api = 'http://' + ip_dst + ':8181/restconf/operations/sina:getVersions'
+                print(api)
+                r = requests.post(url=api, headers=headers)
+                print('get ver odl: ', r.status_code, " ", r.text)
+                res = json.loads(r.text)
+                result = json.loads(res['output']['result'])
+                print('result ', result)
+                return result
+        except Exception as e:
+            print("error read: ", e.__str__())
+        return {}
