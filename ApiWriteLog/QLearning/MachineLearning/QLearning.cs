@@ -1,4 +1,5 @@
-﻿using QLearningProject.Run.Models;
+﻿using Microsoft.Extensions.Logging;
+using QLearningProject.Run.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,6 +7,9 @@ using System.Text;
 
 namespace QLearningProject.MachineLearning
 {
+    /// <summary>
+    /// Cho việc lưu lại n Pull
+    /// </summary>
     public class StateAndAction
     {
         public int State { get; set; }
@@ -34,6 +38,9 @@ namespace QLearningProject.MachineLearning
 
     public class QLearning
     {
+        #region Các thuộc tính
+        private static ILogger<QLearning> _loggerQlearning;
+
         private Random _random = new Random();
         private double _gamma;
         public double Gamma { get => _gamma; }
@@ -58,11 +65,27 @@ namespace QLearningProject.MachineLearning
 
         private int numSuccessForAction;
         private int numRequestForAction;
+        #endregion
 
-        public QLearning(double gamma, double epsilon, double alpha, IQLearningProblem qLearningProblem,
+        /// <summary>
+        /// Chạy q learning với đầu vào là qtable cũ để tính qtable mới
+        /// </summary>
+        /// <param name="loggerQlearning"></param>
+        /// <param name="gamma"></param>
+        /// <param name="epsilon"></param>
+        /// <param name="alpha"></param>
+        /// <param name="qLearningProblem"></param>
+        /// <param name="numSuccessForAction"></param>
+        /// <param name="numRequestForAction"></param>
+        /// <param name="oldQTable"></param>
+        /// <param name="logState"></param>
+        /// <param name="t"></param>
+        /// <param name="nPull"></param>
+        public QLearning(ILogger<QLearning> loggerQlearning, double gamma, double epsilon, double alpha, IQLearningProblem qLearningProblem,
             int numSuccessForAction, int numRequestForAction,
             double[][] oldQTable, LogState[] logState, int t, Dictionary<StateAndAction, int> nPull)
         {
+            _loggerQlearning = loggerQlearning;
             _qLearningProblem = qLearningProblem;
             if (oldQTable == null)
             {
@@ -102,27 +125,36 @@ namespace QLearningProject.MachineLearning
             this.numRequestForAction = numRequestForAction;
         }
 
+        /// <summary>
+        /// Bắt đầu training
+        /// </summary>
+        /// <param name="numberOfIterations"></param>
         public void TrainAgent(int numberOfIterations)
         {
             for (int i = 0; i < numberOfIterations; i++)
             {
-                //lấy init state bất kỳ
+                //lấy init state là một random trong các state đã từng có trong quá khứ
                 int initialState = RandomInitialState();
                 //tính value cho q table
                 InitializeEpisode(initialState);
             }
         }
 
+        /// <summary>
+        /// Chạy sau khi train xong trả ra action mới, với mỗi action mới sẽ cho ra sự thay đổi R W tương ứng
+        /// </summary>
+        /// <param name="initialState"></param>
+        /// <returns></returns>
         public int Run(int initialState)
         {
             if (initialState < 0 || initialState > _qLearningProblem.NumberOfStates) 
                 throw new ArgumentException($"The initial state can be between [0-{_qLearningProblem.NumberOfStates}", nameof(initialState));
-            //return SelectAction(initialState);
-            return UCBSelectAction(_t, initialState);
+            return SelectAction(initialState);
+            //return UCBSelectAction(_t, initialState);
         }
 
         /// <summary>
-        /// Dùng cho train và lựa chọn
+        /// Lựa chọn action theo epsilon greedy
         /// </summary>
         /// <param name="currentState"></param>
         /// <returns></returns>
@@ -130,9 +162,11 @@ namespace QLearningProject.MachineLearning
         {
             double n = _random.NextDouble();
             int action;
+            _loggerQlearning.LogInformation($"random number trong khoang (0,1) n: {n}");
             if (n < _epsilon)
             {
                 var div = numSuccessForAction / (double)numRequestForAction;
+                _loggerQlearning.LogInformation($"r/R in case n < epsilon: {numSuccessForAction}/{numRequestForAction}={div}");
                 if (div <= 0.5)
                 {
                     action = _random.Next(0, 2);
@@ -156,6 +190,12 @@ namespace QLearningProject.MachineLearning
             return action;
         }
 
+        /// <summary>
+        /// Lựa chọn action theo UCB
+        /// </summary>
+        /// <param name="t"></param>
+        /// <param name="currentState"></param>
+        /// <returns></returns>
         public int UCBSelectAction(int t, int currentState)
         {
             var bestAction = 0;
@@ -184,6 +224,11 @@ namespace QLearningProject.MachineLearning
             return bestAction;
         }
 
+        /// <summary>
+        /// Lựa chọn action theo softmax
+        /// </summary>
+        /// <param name="currentState"></param>
+        /// <returns></returns>
         public int SoftMaxSelectAction(int currentState)
         {
             List<double> ListP = new List<double>() { 0, 0, 0, 0, 0, 0 };
@@ -221,8 +266,6 @@ namespace QLearningProject.MachineLearning
             return 0;
         }
 
-
-
         /// <summary>
         /// Tính value cho q table
         /// </summary>
@@ -243,8 +286,8 @@ namespace QLearningProject.MachineLearning
         private void TakeAction(int currentState)
         {
             //random action
-            //int action = SelectAction(currentState);
-            int action = UCBSelectAction(_t, currentState);
+            int action = SelectAction(currentState);
+            //int action = UCBSelectAction(_t, currentState);
 
             //lấy ra giá trị reward tại s và a chỉ định
             double saReward = _qLearningProblem.GetReward(currentState, action);
@@ -275,6 +318,10 @@ namespace QLearningProject.MachineLearning
             return _random.Next(0, _qLearningProblem.NumberOfStates);
         }
 
+        /// <summary>
+        /// Show Q table
+        /// </summary>
+        /// <returns></returns>
         public string ShowQTable()
         {
             StringBuilder sb = new StringBuilder();
