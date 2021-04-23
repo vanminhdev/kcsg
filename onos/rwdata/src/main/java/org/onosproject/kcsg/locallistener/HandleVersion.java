@@ -296,8 +296,8 @@ public final class HandleVersion {
 
                 mems.add(model);
             }
-        } catch (Exception e) {
-            //log.error(e.getMessage());
+        } catch (IOException e) {
+            //log.error(MSG, e.getMessage());
         } finally {
             try {
                 if (buffReader != null) {
@@ -307,7 +307,7 @@ public final class HandleVersion {
                     inputStreamReader.close();
                 }
             } catch (IOException e) {
-                //log.error(e.getMessage());
+                //LOG.error(MSG, e.getMessage());
             }
         }
         return mems;
@@ -353,8 +353,8 @@ public final class HandleVersion {
 
                 controllers.add(model);
             }
-        } catch (Exception e) {
-            //log.error(e.getMessage());
+        } catch (IOException e) {
+            //LOG.error(MSG, e.getMessage());
         } finally {
             try {
                 if (buffReader != null) {
@@ -364,7 +364,7 @@ public final class HandleVersion {
                     inputStreamReader.close();
                 }
             } catch (IOException e) {
-                //log.error(e.getMessage());
+                //LOG.error(MSG, e.getMessage());
             }
         }
         return controllers;
@@ -377,8 +377,23 @@ public final class HandleVersion {
         return memberList.get(index);
     }
 
-    public static ArrayList<InforControllerModel> getRandomMembers(int numMem) {
+    public static ArrayList<InforControllerModel> getRandomAll(int numMem) {
         ArrayList<InforControllerModel> memberList = getAllController();
+        ArrayList<InforControllerModel> result = new ArrayList<InforControllerModel>();
+        for (int i = 0; i < numMem; i++) {
+            int size = memberList.size();
+            if (size > 0) {
+                Random rand = new Random();
+                int index = rand.nextInt(size);
+                result.add(memberList.get(index));
+                memberList.remove(index);
+            }
+        }
+        return result;
+    }
+
+    public static ArrayList<InforControllerModel> getRandomMembers(int numMem) {
+        ArrayList<InforControllerModel> memberList = getMembers();
         ArrayList<InforControllerModel> result = new ArrayList<InforControllerModel>();
         for (int i = 0; i < numMem; i++) {
             int size = memberList.size();

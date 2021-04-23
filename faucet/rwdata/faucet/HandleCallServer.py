@@ -39,6 +39,16 @@ class HandleCallServer:
         return body["version"]
 
     @staticmethod
+    def get_versions_from_server():
+        headers = {"Content-Type": "application/json",
+                   "Accept": "application/json"}
+        response = requests.get(url=HandleCallServer.get_server_url() + "/api/version/get-versions",
+                                headers=headers)
+        body = json.loads(response.text)
+        print(body)
+        return body
+
+    @staticmethod
     def update_version(ip, version):
         headers = {"Content-Type": "application/json",
                    "Accept": "application/json"}

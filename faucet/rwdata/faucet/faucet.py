@@ -50,6 +50,8 @@ from faucet import valves_manager
 from faucet import faucet_metrics
 from faucet import valve_of
 
+from faucet.HandleCallServer import HandleCallServer
+
 EXPORT_RYU_CONFIGS = ['echo_request_interval', 'maximum_unreplied_echo_requests']
 simple_api_name = 'sina_api_sample'
 
@@ -142,7 +144,7 @@ class Faucet(RyuAppBase):
         Kcs.set_local_ip()
         Kcs.init_version()
         ProcessFileQueue.start()
-        #self.scanner()
+        # self.scanner()
 
     @kill_on_exception(exc_logname)
     def _check_thread_exception(self):
@@ -428,6 +430,7 @@ class Faucet(RyuAppBase):
         Kcs.read_data()
         Timer(5, self.scanner).start()
 
+
 url = "/faucet/sina"
 
 class SinaApiSample(ControllerBase):
@@ -485,3 +488,45 @@ class SinaApiSample(ControllerBase):
         data = json.loads((b'' + req.body).decode())
         version = Kcs.get_version_by_ip(data["ip"])
         return json.dumps({"version": version})
+
+    @route("get_versions", url + '/versions/get-versions', methods=['GET'])
+    def get_versions(self, req):
+        versions = Kcs.get_versions()
+        return json.dumps(versions)
+
+    @route("test_ping", url + '/communicate/test-ping', methods=['POST'])
+    def test_ping(self, req):
+        data = json.loads((b'' + req.body).decode())
+        src = data["src"]
+        dst = data["dst"]
+
+        result_read_data = Kcs.read_data_test_ping()
+
+        headers = {"Content-Type": "application/json",
+                   "Accept": "application/json"}
+
+        print("result read data ", result_read_data)
+        res_log = requests.post(url=HandleCallServer.get_server_url() + "/api/Log/log-read-test-ping",
+                                data=json.dumps(result_read_data), headers=headers)
+
+        result_test_ping = {"isPingSuccess": False}
+        if res_log.status_code == 200:
+            body_log = json.loads(res_log.text)
+            print("res log test ping ", body_log)
+            result_test_ping["id"] = body_log
+        else:
+            print("write log test ping error ", res_log.status_code, " ", res_log.text)
+        api_mininet = Kcs.get_api_mininet()
+        if result_read_data["isVersionSuccess"]:
+            print("api mini ", api_mininet)
+            try:
+                res_test_ping = requests.post(url=api_mininet + "/forwarding",
+                                              data=json.dumps({'src': src, 'dst': dst}),
+                                              headers=headers)
+                print(res_test_ping)
+                if res_test_ping.text == "True":
+                    result_test_ping["isPingSuccess"] = True
+            except:
+                print("cannot call api mininet")
+        print("result test ping ", result_test_ping)
+        return json.dumps(result_test_ping)

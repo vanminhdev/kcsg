@@ -30,8 +30,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
@@ -64,6 +62,7 @@ public class KcsgListenerManager {
     public static final String PROVIDER_NAME = "org.onosproject.kcsg.listener";
     public static String myIpAddress = null;
     public static String serverUrl = null;
+    public static String apiMininet = null;
 
     private final LocalDeviceListener deviceListener = new LocalDeviceListener();
     private final LocalHostListener hostListener = new LocalHostListener();
@@ -107,6 +106,19 @@ public class KcsgListenerManager {
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json")
                 .asString();
+
+                HttpResponse<String> resGetApiMininet = Unirest
+                    .get(serverUrl + "/api/remoteIp/get-api-mininet")
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .asString();
+
+                if (resGetApiMininet.getStatus() == 200) {
+                    log.info("api mininet " + resGetApiMininet.getBody());
+                    apiMininet = resGetApiMininet.getBody().replace("\"", "");
+                } else {
+                    log.info("get api mininet " + resGetApiMininet.getStatus());
+                }
 
                 if (response.getStatus() == 200) {
                     wrt.write(response.getBody());
@@ -251,7 +263,7 @@ public class KcsgListenerManager {
 
     private void writeData(String ip, int version) {
         ConfigRWModel config = HandleCallServer.getRWConfig();
-        ArrayList<InforControllerModel> controllers = HandleVersion.getRandomMembers(config.getW());
+        ArrayList<InforControllerModel> controllers = HandleVersion.getRandomAll(config.getW());
 
         JSONArray log = new JSONArray();
         for (InforControllerModel dstController : controllers) {
@@ -267,9 +279,9 @@ public class KcsgListenerManager {
             } else {
                 result = handleWrite(ip, version, dstController);
                 if (result == null) {
-                logDetail.put("length", 0);
+                    logDetail.put("length", 0);
                 } else {
-                        logDetail.put("length", result.getLength());
+                    logDetail.put("length", result.getLength());
                 }
             }
             logDetail.put("end", java.time.LocalDateTime.now());
@@ -373,7 +385,7 @@ public class KcsgListenerManager {
         ConfigRWModel config = HandleCallServer.getRWConfig();
         InforControllerModel controllerTarget = HandleVersion.getRandomMember();
         int versionFromServer = HandleCallServer.getVersionFromServer(controllerTarget.getIp());
-        ArrayList<InforControllerModel> controllers = HandleVersion.getRandomMembers(config.getR());
+        ArrayList<InforControllerModel> controllers = HandleVersion.getRandomAll(config.getR());
 
         JSONArray log = new JSONArray();
         for (InforControllerModel dstController : controllers) {
@@ -502,14 +514,14 @@ public class KcsgListenerManager {
         return null;
     }
 
-    private void scheduleCommunicate() {
-        new Timer().scheduleAtFixedRate(
-            new TimerTask() {
-                @Override
-                public void run() {
-                    readData();
-                }
-            }, 0, 5000
-        );
-    }
+    // private void scheduleCommunicate() {
+    //     new Timer().scheduleAtFixedRate(
+    //         new TimerTask() {
+    //             @Override
+    //             public void run() {
+    //                 readData();
+    //             }
+    //         }, 0, 5000
+    //     );
+    // }
 }
