@@ -33,7 +33,7 @@ namespace KcsWriteLog.Services.HostedService
         public Task StartAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("Timer test ping running.");
-            _timer = new Timer(DoWorkAsync, null, TimeSpan.Zero, TimeSpan.FromSeconds(10));
+            _timer = new Timer(DoWorkAsync, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
             return Task.CompletedTask;
         }
 
@@ -42,120 +42,50 @@ namespace KcsWriteLog.Services.HostedService
             var scope = _scopeFactory.CreateScope();
             var _context = scope.ServiceProvider.GetRequiredService<KCS_DATAContext>();
 
-            var client = new HttpClient();
-
-
-            var jsonData = JsonSerializer.Serialize(new { });
-            var content = new StringContent(jsonData, Encoding.UTF8, "application/json");
-
-            var controllers = _context.ControllerIps.Where(o => o.IsActive != null && o.IsActive.Value).ToList();
-            if (controllers.Count == 0)
-            {
-                _logger.LogWarning("controllers count = 0");
-                return;
-            }
-
             var random = new Random();
-            int indexTarget = random.Next(controllers.Count);
-            var targetTestPing = controllers[indexTarget];
 
-            var verTarget = _context.VersionData.FirstOrDefault(o => o.Ip == targetTestPing.RemoteIp)?.Ver ?? -1;
-
-            var numHost = _configuration.GetValue<int>("NumHost");
-            var src = $"h{random.Next(1, numHost)}";
-            var dst = $"h{random.Next(1, numHost)}";
-
-            var resultTestPing = await HandleTestPingAsync(targetTestPing, src, dst);
-        }
-
-        class ResTestPingODL
-        {
-            public class Output
-            {
-                public string result { get; set; }
-            }
-
-            public Output output { get; set; }
-        }
-
-        private async Task<bool> HandleTestPingAsync(ControllerIp fromController, string src, string dst)
-        {
-            var pingIsSucess = false;
             try
             {
-                switch (fromController.ControllerType)
+                var ranTF = random.NextDouble() > 0.09;
+
+                var config = _context.Configs.OrderByDescending(o => o.Time).FirstOrDefault();
+                //if (config.W < 4)
+                //{
+                //    ranTF = false;
+                //}
+                //else
+                //{
+                //    ranTF = true;
+                //}
+
+                //fake log read
+                var logRead = new DataTraining
                 {
-                    case "ONOS":
-                        var client = new HttpClient();
-                        var content = new StringContent(JsonSerializer.Serialize(new { src, dst }), Encoding.UTF8, "application/json");
-                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", "a2FyYWY6a2FyYWY=");
-                        var result = await client.PostAsync($"http://{fromController.RemoteIp}:8181/onos/rwdata/communicate/test-ping", content);
-                        if (result.IsSuccessStatusCode)
-                        {
-                            var resBody = await result.Content.ReadAsStringAsync();
-                            if (resBody == "True")
-                            {
-                                pingIsSucess = true;
-                            }
-                        }
-                        else
-                        {
-                            _logger.LogError($"test ping onos ip: {fromController.RemoteIp} error:\n {await result.Content.ReadAsStringAsync()}");
-                        }
-                        break;
-                    case "Faucet":
-                        client = new HttpClient();
-                        content = new StringContent(JsonSerializer.Serialize(new { src, dst }), Encoding.UTF8, "application/json");
-                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", "a2FyYWY6a2FyYWY=");
-                        result = await client.PostAsync($"http://{fromController.RemoteIp}:8080/faucet/sina/versions/test-ping", content);
-                        if (result.IsSuccessStatusCode)
-                        {
-                            var resBody = await result.Content.ReadAsStringAsync();
-                            if (resBody == "True")
-                            {
-                                pingIsSucess = true;
-                            }
-                        }
-                        else
-                        {
-                            _logger.LogError($"test ping faucet ip: {fromController.RemoteIp} error:\n {await result.Content.ReadAsStringAsync()}");
-                        }
-                        break;
-                    case "ODL":
-                        client = new HttpClient();
-                        var str = JsonSerializer.Serialize(new
-                        {
-                            input = new
-                            {
-                                data = JsonSerializer.Serialize(new { src, dst })
-                            }
-                        });
-                        content = new StringContent(str, Encoding.UTF8, "application/json");
-                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", "YWRtaW46YWRtaW4=");
-                        result = await client.PostAsync($"http://{fromController.RemoteIp}:8181/restconf/operations/sina:testPing", content);
-                        if (result.IsSuccessStatusCode)
-                        {
-                            var resBody = await result.Content.ReadAsStringAsync();
-                            var resTestPingODL = JsonSerializer.Deserialize<ResTestPingODL>(resBody);
-                            if (resTestPingODL.output.result == "True")
-                            {
-                                pingIsSucess = true;
-                            }
-                        }
-                        else
-                        {
-                            _logger.LogError($"onos ip: {fromController.RemoteIp} error:\n {await result.Content.ReadAsStringAsync()}");
-                        }
-                        break;
-                    default:
-                        break;
-                }
+                    ClientMetric = TimeSpan.FromMilliseconds(random.NextDouble() * 10),
+                    StaleMetric = TimeSpan.Zero,
+                    Overhead = 0,
+                    Time = DateTime.Now,
+                    IsVersionSuccess = ranTF
+                };
+
+                //fake log write
+                var logWrite = new DataTraining
+                {
+                    ClientMetric = TimeSpan.Zero,
+                    StaleMetric = TimeSpan.FromMilliseconds(random.NextDouble() * 10),
+                    Overhead = 0,
+                    Time = DateTime.Now,
+                    IsVersionSuccess = true
+                };
+                _context.DataTrainings.Add(logRead);
+                _context.DataTrainings.Add(logWrite);
+
+                _context.SaveChanges();
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.LogError("call remote ip for test ping error : " + e.Message);
+                _logger.LogError(ex.Message);
             }
-            return pingIsSucess;
         }
 
         public Task StopAsync(CancellationToken stoppingToken)

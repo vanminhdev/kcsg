@@ -48,14 +48,13 @@ namespace QLearningProject.MachineLearning
         public double Epsilon { get => _epsilon; }
         private double _alpha;
         public double Alpha { get => _alpha; }
-        private double _c = 15;
+        private double _c = 0.05;
 
         private double[][] _qTable;
         public double[][] QTable { get => _qTable; }
 
         public Dictionary<StateAndAction, int> _nPull;
         public int _t { get; set; }
-
 
         private double T = 0.1;
 
@@ -126,7 +125,8 @@ namespace QLearningProject.MachineLearning
         }
 
         /// <summary>
-        /// Bắt đầu training
+        /// Bắt đầu training bằng cách khơi tạo init sate bằng cách random state trong tập state đã biết
+        /// sau đó tính q value
         /// </summary>
         /// <param name="numberOfIterations"></param>
         public void TrainAgent(int numberOfIterations)
@@ -147,14 +147,16 @@ namespace QLearningProject.MachineLearning
         /// <returns></returns>
         public int Run(int initialState)
         {
-            if (initialState < 0 || initialState > _qLearningProblem.NumberOfStates) 
+            if (initialState < 0 || initialState > _qLearningProblem.NumberOfStates)
                 throw new ArgumentException($"The initial state can be between [0-{_qLearningProblem.NumberOfStates}", nameof(initialState));
-            return SelectAction(initialState);
+            //return SelectAction(initialState);
             //return UCBSelectAction(_t, initialState);
+            return SoftMaxSelectAction(initialState);
         }
 
         /// <summary>
         /// Lựa chọn action theo epsilon greedy
+        /// theo q value max hoặc random theo r/R
         /// </summary>
         /// <param name="currentState"></param>
         /// <returns></returns>
@@ -162,11 +164,9 @@ namespace QLearningProject.MachineLearning
         {
             double n = _random.NextDouble();
             int action;
-            _loggerQlearning.LogInformation($"random number trong khoang (0,1) n: {n}");
             if (n < _epsilon)
             {
                 var div = numSuccessForAction / (double)numRequestForAction;
-                _loggerQlearning.LogInformation($"r/R in case n < epsilon: {numSuccessForAction}/{numRequestForAction}={div}");
                 if (div <= 0.5)
                 {
                     action = _random.Next(0, 2);
@@ -212,7 +212,7 @@ namespace QLearningProject.MachineLearning
                 {
                     _nPull.Add(sa, 1);
                 }
-                var ucb = _qTable[currentState][0] + _c * Math.Sqrt(Math.Log(t) / _nPull[sa]);
+                var ucb = _qTable[currentState][i] + _c * Math.Sqrt(Math.Log(t) / _nPull[sa]);
                 if (ucb > bestUCB)
                 {
                     sa = saTemp;
@@ -243,7 +243,6 @@ namespace QLearningProject.MachineLearning
                 ListP[i] = Math.Pow(Math.E, _qTable[currentState][i]) / T / sum;
             }
 
-
             List<double> SumP = new List<double>() { 0, 0, 0, 0, 0, 0 };
             for (int i = 0; i < 6; i++)
             {
@@ -258,12 +257,32 @@ namespace QLearningProject.MachineLearning
             var randomChoose = _random.NextDouble();
             for (int i = 0; i < 6; i++)
             {
-                if (SumP[i] >= randomChoose)
+                if (randomChoose >= SumP[i])
                 {
+                    //chưa có state action này thì khởi tạo
+                    var sa = new StateAndAction { State = currentState, Action = i };
+                    if (!_nPull.ContainsKey(sa))
+                    {
+                        _nPull.Add(sa, 1);
+                    }
                     return i;
                 }
             }
             return 0;
+        }
+
+        /// <summary>
+        /// Khởi tạo giá trị q value dùng cho softmax và ucb
+        /// </summary>
+        /// <param name="initState"></param>
+        public void InitFirstQValue(int initState)
+        {
+            _qTable[initState][0] = 0;
+            _qTable[initState][1] = 0;
+            _qTable[initState][2] = 0;
+            _qTable[initState][3] = 0;
+            _qTable[initState][4] = 0;
+            _qTable[initState][5] = 0;
         }
 
         /// <summary>
@@ -285,21 +304,33 @@ namespace QLearningProject.MachineLearning
         /// <param name="currentState">trạng thái đang xét</param>
         private void TakeAction(int currentState)
         {
-            //random action
-            int action = SelectAction(currentState);
+            #region  select action dựa theo q value max hoặc theo r/R
+            //int action = SelectAction(currentState);
             //int action = UCBSelectAction(_t, currentState);
+            int action = SoftMaxSelectAction(currentState);
+            #endregion
 
+            #region lấy reward
             //lấy ra giá trị reward tại s và a chỉ định
             double saReward = _qLearningProblem.GetReward(currentState, action);
+            #endregion
 
+            #region tính q value
             //lấy max đã có tại action đang xét
-            double maxQValue = _qTable[action].Max();
-
+            double maxQValue = _qTable[currentState].Max();
             //tính ra value mới
             double qCurrentState = _qTable[currentState][action] + _alpha * (saReward + _gamma * maxQValue - _qTable[currentState][action]);
-
             //cập nhật vào q table tại s(curr) a(random)
-            _qTable[currentState][action] = qCurrentState;
+            //_qTable[currentState][action] = qCurrentState;
+            #endregion
+
+            #region tính q value theo ucb & soft max
+            //refer: https://github.com/SahanaRamnath/MultiArmedBandit_RL/tree/master/UCB
+            //tính q value cho ucb
+            var sa = new StateAndAction { State = currentState, Action = action };
+            double qCurrentStateNew = _qTable[currentState][action] + (saReward - _qTable[currentState][action]) / _nPull[sa];
+            _qTable[currentState][action] = qCurrentStateNew;
+            #endregion
         }
 
         /// <summary>

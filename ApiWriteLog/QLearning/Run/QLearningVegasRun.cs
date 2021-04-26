@@ -8,11 +8,11 @@ using System.Collections.Generic;
 
 namespace QLearningProject.Run
 {
-    public class QLearningRun
+    public class QLearningVegasRun
     {
-        private static ILogger<QLearningRun> _loggerQlearningRun;
-        private static ILogger<QLearning> _loggerQlearning;
-        public QLearningRun(ILogger<QLearningRun> logger, ILogger<QLearning> loggerQlearning)
+        private static ILogger<QLearningVegasRun> _loggerQlearningRun;
+        private static ILogger<QLearningVegas> _loggerQlearning;
+        public QLearningVegasRun(ILogger<QLearningVegasRun> logger, ILogger<QLearningVegas> loggerQlearning)
         {
             _loggerQlearningRun = logger;
             _loggerQlearning = loggerQlearning;
@@ -21,27 +21,10 @@ namespace QLearningProject.Run
         /// <summary>
         /// Chạy xong trả ra R W mới
         /// </summary>
-        /// <param name="r"></param>
-        /// <param name="w"></param>
-        /// <param name="N"></param>
-        /// <param name="oldNumSuccess"></param>
-        /// <param name="oldNumRequest"></param>
-        /// <param name="newNumSuccess"></param>
-        /// <param name="newNumRequest"></param>
-        /// <param name="l1"></param>
-        /// <param name="l2"></param>
-        /// <param name="NOE"></param>
-        /// <param name="numSuccessForAction"></param>
-        /// <param name="numRequestForAction"></param>
-        /// <param name="oldRewards"></param>
-        /// <param name="oldQTable"></param>
-        /// <param name="logState"></param>
-        /// <param name="t"></param>
-        /// <param name="nPull"></param>
         /// <returns></returns>
-        public RWValue Run(int r, int w, int N, int oldNumSuccess, int oldNumRequest, int newNumSuccess, int newNumRequest,
+        public RWValueVegas Run(int r, int w, int N, int oldNumSuccess, int oldNumRequest, int newNumSuccess, int newNumRequest,
             int l1, int l2, int NOE, int numSuccessForAction, int numRequestForAction, double[][] oldRewards, double[][] oldQTable,
-            LogState[] logState, int t, Dictionary<StateAndAction, int> nPull)
+            LogState[] logState, Queue<double> logCSC)
         {
             LogState lastState = null;
             if (logState.Length > 0)
@@ -50,15 +33,15 @@ namespace QLearningProject.Run
             }
             var problem = new SDNProblem(oldRewards);
 
-            var qLearning = new QLearning(_loggerQlearning, gamma: 0.8, epsilon: 0.4, alpha: 0.6,
-                problem, numSuccessForAction, numRequestForAction, oldQTable, logState, t, nPull);
+            var qLearning = new QLearningVegas(_loggerQlearning, gamma: 0.8, epsilon: 0.4, alpha: 0.6,
+                problem, numSuccessForAction, numRequestForAction, oldQTable, logState, logCSC, N);
 
-            _loggerQlearningRun.LogInformation($"r/R: {numSuccessForAction}/{numRequestForAction} = {numSuccessForAction/(double)numRequestForAction}");
+            _loggerQlearningRun.LogInformation($"r/R: {numSuccessForAction}/{numRequestForAction} = {numSuccessForAction / (double)numRequestForAction}");
 
             //tính reward mới
             double newReward = Math.Round((newNumSuccess - oldNumSuccess) / (double)(newNumRequest - oldNumRequest) * 100);
 
-            //state khởi tạo
+            //state khởi tạo khi training xong
             int initialState = 0;
             if (lastState != null) //cập nhật lại reward tại vị trí (state,action) cũ
             {
@@ -72,19 +55,11 @@ namespace QLearningProject.Run
             {
                 //lựa chọn action
                 int state = problem.GetState(l1, l2, NOE);
-
-                #region khởi tạo reward chỉ dùng cho epsilon greedy
-                //int action = qLearning.SelectAction(state);
-                //problem.rewards[state][action] = newReward;
-                #endregion
-
-                #region khởi tạo q value chỉ (chỉ dùng cho ucb và softmax)
-                //qLearning.InitFirstQValue(state);
-                //L1 L2 NOE
-                #endregion
+                int action = qLearning.SelectAction(state);
+                problem.rewards[state][action] = newReward;
             }
 
-            //show reward trước train và q value
+            //show reward và q value
             _loggerQlearningRun.LogInformation($"Reward:\n{problem.ShowReward()}");
             //_loggerQlearningRun.LogInformation($"QTable:\n{qLearning.ShowQTable()}");
             qLearning.TrainAgent(200);
@@ -143,15 +118,13 @@ namespace QLearningProject.Run
             {
                 _loggerQlearningRun.LogError($"Qlearning Error: {ex.Message}");
             }
-            RWValue rwValue = new RWValue()
+            RWValueVegas rwValue = new RWValueVegas()
             {
                 R = r,
                 W = w,
                 Action = newAction,
                 rewards = problem.rewards,
-                qTable = qLearning.QTable,
-                t = qLearning._t,
-                nPull = qLearning._nPull
+                qTable = qLearning.QTable
             };
             return rwValue;
         }
