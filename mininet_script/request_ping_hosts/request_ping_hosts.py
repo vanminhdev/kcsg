@@ -62,7 +62,10 @@ if __name__=="__main__":
         controller = random.choice(controllers)
         print("controller random: ", controller)
 
-        hosts = ["h1", "h2", "h3", "h4"]
+        hosts = []
+        for i in range(1, 19):
+            hosts.append("h" + str(i))
+
         sample = random.sample(hosts, 2)
         source = sample[0]
         destination = sample[1]
