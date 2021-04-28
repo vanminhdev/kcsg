@@ -1,5 +1,4 @@
 ﻿using QLearningProject.MachineLearning;
-using QLearningProject.Run.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -14,6 +13,11 @@ namespace QLearningProject.Problems
         public int NumberOfStates => svalue.Length;
         public int NumberOfActions => 6;
 
+        /// <summary>
+        /// Problem chứa danh sách state, bảng reward
+        /// old reward là đầu vào để tính ra reward mới
+        /// </summary>
+        /// <param name="oldRewards"></param>
         public SDNProblem(double[][] oldRewards)
         {
             int val = 0;
@@ -44,6 +48,13 @@ namespace QLearningProject.Problems
             }
         }
 
+        /// <summary>
+        /// với mỗi L1 L2 NOE là 1 action tương ứng
+        /// </summary>
+        /// <param name="L1"></param>
+        /// <param name="L2"></param>
+        /// <param name="NOE"></param>
+        /// <returns></returns>
         public int GetState(int L1, int L2, int NOE)
         {
             return svalue[L1,L2,NOE];
@@ -58,6 +69,12 @@ namespace QLearningProject.Problems
             return null;
         }
 
+        /// <summary>
+        /// Lấy ra reward tại state và action tương ứng
+        /// </summary>
+        /// <param name="currentState"></param>
+        /// <param name="action"></param>
+        /// <returns></returns>
         public double GetReward(int currentState, int action)
         {
             return rewards[currentState][action];
