@@ -494,6 +494,11 @@ class SinaApiSample(ControllerBase):
         versions = Kcs.get_versions()
         return json.dumps(versions)
 
+    @route("reset_versions", url + '/versions/reset-versions', methods=['PUT'])
+    def reset_versions(self, req):
+        Kcs.reset_versions()
+        return ""
+
     @route("test_ping", url + '/communicate/test-ping', methods=['POST'])
     def test_ping(self, req):
         data = json.loads((b'' + req.body).decode())
