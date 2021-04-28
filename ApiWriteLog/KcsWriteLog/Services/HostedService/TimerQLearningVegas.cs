@@ -14,12 +14,12 @@ using System.Threading.Tasks;
 
 namespace KcsWriteLog.Services.HostedService
 {
-    public class TimerQLearning : IHostedService, IDisposable
+    public class TimerQLearningVegas : IHostedService, IDisposable
     {
-        private readonly ILogger<TimerQLearning> _loggerQlearningRun;
+        private readonly ILogger<TimerQLearningVegas> _loggerQlearningRun;
         private readonly IServiceScopeFactory _scopeFactory;
         private Timer _timer;
-        private QLearningRun _qLearning;
+        private QLearningVegasRun _qLearning;
 
         /// <summary>
         /// số lần đọc đúng
@@ -35,15 +35,14 @@ namespace KcsWriteLog.Services.HostedService
         private double[][] oldRewards;
         private double[][] oldQTable;
 
-        private int t;
-        private Dictionary<StateAndAction, int> nPull;
+        private readonly List<LogState> _logState = new List<LogState>();
 
-        private List<LogState> _logState = new List<LogState>();
+        private readonly Queue<double> _logCSC = new Queue<double>();
 
-        public TimerQLearning(ILogger<TimerQLearning> logger, ILogger<QLearningRun> loggerQlearningRun, ILogger<QLearning> loggerQlearning, IServiceScopeFactory scopeFactory)
+        public TimerQLearningVegas(ILogger<TimerQLearningVegas> logger, ILogger<QLearningVegasRun> loggerQlearningRun, ILogger<QLearningVegas> loggerQlearning, IServiceScopeFactory scopeFactory)
         {
             _loggerQlearningRun = logger;
-            _qLearning = new QLearningRun(loggerQlearningRun, loggerQlearning);
+            _qLearning = new QLearningVegasRun(loggerQlearningRun, loggerQlearning);
             _scopeFactory = scopeFactory;
         }
 
@@ -55,12 +54,17 @@ namespace KcsWriteLog.Services.HostedService
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// Khởi tạo r w cho r cao w nhỏ để request đầu tiên có success
+        /// </summary>
+        /// <param name="state"></param>
         private void DoWork(object state)
         {
             var scope = _scopeFactory.CreateScope();
             var _context = scope.ServiceProvider.GetRequiredService<KCS_DATAContext>();
 
             _loggerQlearningRun.LogInformation("==========================================Timed QLearning is working========================================================");
+            _loggerQlearningRun.LogInformation("Timed QLearning is working.");
             var rwConfig = _context.Configs.OrderByDescending(o => o.Time).FirstOrDefault();
             if (rwConfig == null)
             {
@@ -132,14 +136,11 @@ namespace KcsWriteLog.Services.HostedService
             _loggerQlearningRun.LogInformation($"l1, l2, NOE = {l1}, {l2}, {NOE}");
             int N = _context.ControllerIps.Where(o => o.IsActive != null && o.IsActive.Value).Count(); //số controller
 
-            //chạy qlearning
             var newValue = _qLearning.Run(rwConfig.R, rwConfig.W, N, oldNumSuccess, oldNumRequest, newNumSuccess, newNumRequest,
-                l1, l2, NOE, numSuccessForAction, numRequestForAction, oldRewards, oldQTable, _logState.ToArray(), t, nPull);
+                l1, l2, NOE, numSuccessForAction, numRequestForAction, oldRewards, oldQTable, _logState.ToArray(), _logCSC);
 
             oldRewards = newValue.rewards;
             oldQTable = newValue.qTable;
-            t = newValue.t;
-            nPull = newValue.nPull;
 
             _context.Configs.Add(new Config
             {

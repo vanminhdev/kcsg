@@ -16,5 +16,6 @@ namespace KcsWriteLog.Models
         public string HostDst { get; set; }
         public int Overhead { get; set; }
         public DateTime Time { get; set; }
+        public DateTime? TimeUpdate { get; set; }
     }
 }
