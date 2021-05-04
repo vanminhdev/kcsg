@@ -5,7 +5,7 @@ using System.Text;
 namespace QLearningProject.Run.Models
 {
     /// <summary>
-    /// Trạng thái và hành động cuối cùng
+    /// State, action trên bảng reward hoặc q table
     /// </summary>
     public class LogState
     {

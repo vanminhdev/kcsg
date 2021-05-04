@@ -1,9 +1,0 @@
-D:\work\SDN\kcsg\ApiWriteLog\QLearning\bin\Debug\netcoreapp3.1\QLearningProject.deps.json
-D:\work\SDN\kcsg\ApiWriteLog\QLearning\bin\Debug\netcoreapp3.1\QLearningProject.dll
-D:\work\SDN\kcsg\ApiWriteLog\QLearning\bin\Debug\netcoreapp3.1\QLearningProject.pdb
-D:\work\SDN\kcsg\ApiWriteLog\QLearning\obj\Debug\netcoreapp3.1\QLearningProject.csprojAssemblyReference.cache
-D:\work\SDN\kcsg\ApiWriteLog\QLearning\obj\Debug\netcoreapp3.1\QLearningProject.AssemblyInfoInputs.cache
-D:\work\SDN\kcsg\ApiWriteLog\QLearning\obj\Debug\netcoreapp3.1\QLearningProject.AssemblyInfo.cs
-D:\work\SDN\kcsg\ApiWriteLog\QLearning\obj\Debug\netcoreapp3.1\QLearningProject.csproj.CoreCompileInputs.cache
-D:\work\SDN\kcsg\ApiWriteLog\QLearning\obj\Debug\netcoreapp3.1\QLearningProject.dll
-D:\work\SDN\kcsg\ApiWriteLog\QLearning\obj\Debug\netcoreapp3.1\QLearningProject.pdb

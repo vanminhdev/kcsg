@@ -2,6 +2,7 @@ from flask import Flask, request
 import json
 import os
 from threading import Timer
+import random
  
 from mininet.net import Mininet
 from mininet.node import Controller, RemoteController
@@ -17,10 +18,10 @@ os.system("sudo mn -c")
 n_controllers = 9
 
 #Domain Controller
-Domain=['192.168.254.128', '192.168.254.128', '192.168.254.128', '192.168.254.128',
-        '192.168.254.128', '192.168.254.128', '192.168.254.128', '192.168.254.128',
-        '192.168.254.128']
-#Domain=['192.168.254.128', '192.168.254.128']
+Domain=['192.168.31.132', '192.168.31.238', '192.168.31.95', '192.168.31.17',
+        '192.168.31.219', '192.168.31.229', '192.168.31.174', '192.168.31.203',
+        '192.168.31.184']
+#Domain=['192.168.31.128', '192.168.31.128']
 
 net = Mininet( topo=None, build=False)
 
@@ -77,27 +78,28 @@ for index in range(0, n_controllers):
     switch.start([controller])
 
 #change network
-commands = [
-    {
-        'value': "net.configLinkStatus('s1', 's2', 'down')",
-    },
-    {
-        'value': "net.configLinkStatus('s1', 's2', 'up')",
-    }
-]
+commands = []
+
+for i in range(1, 9, 2):
+    commands.append({
+        'value': "net.configLinkStatus('s" + str(i) + "', 's" + str(i + 1) + "', 'down')",
+    })
+
+    commands.append({
+        'value': "net.configLinkStatus('s" + str(i) + "', 's" + str(i + 1) + "', 'up')",
+    })
 
 is_continue = True
 
-index_cmd = 0
-
 def change_network():
+    index_cmd = random.randint(0, len(commands) - 1)
     cmd = commands[index_cmd]['value']
     print('%s'%(cmd))
     exec(cmd)
     print('Done')
-    Timer(5, change_network).start()
+    Timer(1, change_network).start()
 
-change_network()
+#change_network()
 
 def get_links(net):
     data = {}
@@ -124,7 +126,7 @@ def find_path(links, src, dst):
     graph = Graph()
     for keySrc in links:
         for keyDst in links[keySrc]:
-            print(keySrc + " " + keyDst)
+            #print(keySrc + " " + keyDst)
             graph.add_edge(keySrc, keyDst, 1)
 
     dijkstra = DijkstraSPF(graph, src)
@@ -172,20 +174,26 @@ def forwarding():
     links = get_links(net)
     print(links)
     pathFromSrc = find_path(links, src, dst)
-    print(pathFromSrc)
+    print("path from src ", pathFromSrc)
     add_flow(links, pathFromSrc)
 
     pathFromDst = find_path(links, dst, src)
-    print(pathFromDst)
+    print("path from dst ", pathFromDst)
     add_flow(links, pathFromDst)
 
     hostSrc = hosts[src]
     hostDst = hosts[dst]
 
+    print(hostSrc)
+    print(hostDst)
+
     comm = 'ping -c1 -W 1 ' + str(hostDst.IP())
+    print(comm)
     result = hostSrc.cmd(comm)
 
     sent, received = net._parsePing(result)
+    print(sent, received)
     return (str(sent == received), 200)
 
 app.run(host='0.0.0.0', debug=True, use_reloader=False)
+#CLI(net)

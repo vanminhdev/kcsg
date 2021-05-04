@@ -16,4 +16,13 @@ namespace QLearningProject.Run.Models
         public int t { get; set; }
         public Dictionary<StateAndAction, int> nPull { get; set; }
     }
+
+    public class RWValueVegas
+    {
+        public int R { get; set; }
+        public int W { get; set; }
+        public int Action { get; set; }
+        public double[][] rewards { get; set; }
+        public double[][] qTable { get; set; }
+    }
 }
