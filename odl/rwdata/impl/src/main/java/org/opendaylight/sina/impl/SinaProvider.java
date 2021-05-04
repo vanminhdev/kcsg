@@ -46,6 +46,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.GetVersionsInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.GetVersionsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.GetVersionsOutputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.ResetVersionsInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.ResetVersionsOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.ResetVersionsOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.SinaService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.TestPingInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.TestPingOutput;
@@ -556,6 +559,13 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         String versions = HandleVersion.getVersions();
         GetVersionsOutputBuilder builder = new GetVersionsOutputBuilder();
         builder.setResult(versions);
+        return RpcResultBuilder.success(builder.build()).buildFuture();
+    }
+
+    @Override
+    public ListenableFuture<RpcResult<ResetVersionsOutput>> resetVersions(ResetVersionsInput input) {
+        HandleVersion.resetVersions();
+        ResetVersionsOutputBuilder builder = new ResetVersionsOutputBuilder();
         return RpcResultBuilder.success(builder.build()).buildFuture();
     }
 
