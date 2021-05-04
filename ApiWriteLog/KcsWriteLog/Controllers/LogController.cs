@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -151,6 +152,28 @@ namespace KcsWriteLog.Controllers
                     Time = DateTime.Now,
                     IsVersionSuccess = true
                 });
+                _context.SaveChanges();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.ToString() });
+            }
+        }
+
+        [Route("log-ping")]
+        [HttpPut]
+        public IActionResult LogPing([Required]int? id, [Required]bool? isPingSuccess)
+        {
+            try
+            {
+                var log = _context.DataTrainings.FirstOrDefault(o => o.Id == id);
+                if (log == null)
+                {
+                    return StatusCode(StatusCodes.Status404NotFound, new { message = "id not found" });
+                }
+                log.IsPingSuccess = isPingSuccess;
+                log.TimeUpdate = DateTime.Now;
                 _context.SaveChanges();
                 return Ok();
             }

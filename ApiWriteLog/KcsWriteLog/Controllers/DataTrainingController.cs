@@ -30,8 +30,8 @@ namespace KcsWriteLog.Controllers
         {
             var datas = _context.DataTrainings.Select(o => new { 
                 o.Id,
-                ClientMetric = o.ClientMetric.Milliseconds,
-                StaleMetric = o.StaleMetric.Milliseconds,
+                ClientMetric = o.ClientMetric.TotalMilliseconds,
+                StaleMetric = o.StaleMetric.TotalMilliseconds,
                 o.Overhead,
                 o.IsVersionSuccess,
                 o.Time

@@ -70,6 +70,10 @@ namespace KcsWriteLog.Models
                     .HasMaxLength(100)
                     .IsUnicode(false);
 
+                entity.Property(e => e.Description)
+                    .HasMaxLength(100)
+                    .IsFixedLength(true);
+
                 entity.Property(e => e.IsActive).HasColumnName("isActive");
 
                 entity.Property(e => e.Port)
@@ -94,6 +98,8 @@ namespace KcsWriteLog.Models
                     .IsUnicode(false);
 
                 entity.Property(e => e.Time).HasColumnType("datetime");
+
+                entity.Property(e => e.TimeUpdate).HasColumnType("datetime");
             });
 
             modelBuilder.Entity<LogRead>(entity =>

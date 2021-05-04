@@ -1,0 +1,10 @@
+*.svn
+*.pickle
+*/cache/*
+*/zoogml_*/*
+.DS_Store
+sources/cache.data
+sources/country_info.data
+*.zip
+*.log
+sources/zoogml/*
