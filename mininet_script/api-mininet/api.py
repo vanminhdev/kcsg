@@ -78,32 +78,16 @@ for index in range(0, n_controllers):
     switch.start([controller])
 
 #change network
-commands = [
-    {
-        'value': "net.configLinkStatus('s1', 's2', 'down')",
-    },
-    {
-        'value': "net.configLinkStatus('s1', 's2', 'up')",
-    },
-    {
-        'value': "net.configLinkStatus('s3', 's4', 'down')",
-    },
-    {
-        'value': "net.configLinkStatus('s3', 's4', 'up')",
-    },
-    {
-        'value': "net.configLinkStatus('s5', 's6', 'down')",
-    },
-    {
-        'value': "net.configLinkStatus('s5', 's6', 'up')",
-    },
-    {
-        'value': "net.configLinkStatus('s7', 's8', 'down')",
-    },
-    {
-        'value': "net.configLinkStatus('s7', 's8', 'up')",
-    }
-]
+commands = []
+
+for i in range(1, 9, 2):
+    commands.append({
+        'value': "net.configLinkStatus('s" + str(i) + "', 's" + str(i + 1) + "', 'down')",
+    })
+
+    commands.append({
+        'value': "net.configLinkStatus('s" + str(i) + "', 's" + str(i + 1) + "', 'up')",
+    })
 
 is_continue = True
 
@@ -212,3 +196,4 @@ def forwarding():
     return (str(sent == received), 200)
 
 app.run(host='0.0.0.0', debug=True, use_reloader=False)
+#CLI(net)

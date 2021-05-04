@@ -17,6 +17,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Random;
 
 import org.json.JSONArray;
@@ -417,6 +418,73 @@ public final class HandleVersion {
             }
         }
         return result;
+    }
+
+    public static void resetVersions() {
+        String path = INIT_PATH;
+        JSONObject jsonVersion = null;
+        InputStreamReader inputStreamReader = null;
+        BufferedReader buffReader = null;
+        try {
+            inputStreamReader = new InputStreamReader(
+                new FileInputStream(path + "/version.json"), StandardCharsets.UTF_8
+            );
+            buffReader = new BufferedReader(inputStreamReader);
+            String line;
+
+            while ((line = buffReader.readLine()) != null) {
+                jsonVersion = new JSONObject(line);
+            }
+        } catch (IOException e) {
+            LOG.error(MSG, e.getMessage());
+        } finally {
+            try {
+                if (buffReader != null) {
+                    buffReader.close();
+                }
+                if (inputStreamReader != null) {
+                    inputStreamReader.close();
+                }
+            } catch (IOException e) {
+                LOG.error(MSG, e.getMessage());
+            }
+        }
+
+        if (jsonVersion == null) {
+            return;
+        }
+
+        Iterator<String> keys = jsonVersion.keys();
+        while (keys.hasNext()) {
+            String key = keys.next();
+            jsonVersion.put(key, 0);
+        }
+
+        LOG.info(MSG, "reset version: " + jsonVersion.toString());
+
+        Writer outputStreamWriter = null;
+        BufferedWriter bufferWriter = null;
+        try {
+            outputStreamWriter = new OutputStreamWriter(
+                new FileOutputStream(path + "/version.json", false),
+                StandardCharsets.UTF_8
+            );
+            bufferWriter = new BufferedWriter(outputStreamWriter);
+            bufferWriter.write(jsonVersion.toString());
+        } catch (IOException e) {
+            LOG.error(MSG, e.getMessage());
+        } finally {
+            try {
+                if (bufferWriter != null) {
+                    bufferWriter.close();
+                }
+                if (outputStreamWriter != null) {
+                    outputStreamWriter.close();
+                }
+            } catch (IOException e) {
+                LOG.error(MSG, e.getMessage());
+            }
+        }
     }
 }
 
