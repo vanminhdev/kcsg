@@ -128,17 +128,17 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
             case DELETE:
                 LOG.info(MSG, "********************** Node Remove ***************");
                 LOG.info(MSG, "NETCONF Node was removed: " + node.getIdentifier());
-                //logChange("DELETE", requestGet());
+                logChange("DELETE", requestGet());
                 break;
             case SUBTREE_MODIFIED:
-                // LOG.info(MSG, "****************** Node Modify ***************");
-                // LOG.info(MSG, "NETCONF Node was updated: " + node.getIdentifier());
-                // //logChange("SUBTREE_MODIFIED", requestGet());
+                //LOG.info(MSG, "****************** Node Modify ***************");
+                //LOG.info(MSG, "NETCONF Node was updated: " + node.getIdentifier());
+                //logChange("SUBTREE_MODIFIED", requestGet());
                 break;
             case WRITE:
                 LOG.info(MSG, "********************* Node Add ************************");
                 LOG.info(MSG, "NETCONF Node was created: " + node.getIdentifier());
-                //logChange("WRITE", requestGet());
+                logChange("WRITE", requestGet());
                 break;
             default:
                 throw new IllegalStateException("Unhandled node change" + change);
