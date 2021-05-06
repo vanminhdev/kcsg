@@ -93,6 +93,10 @@ public class ApiManager implements KcsgCommunicateApiService {
         ConfigRWModel config = HandleCallServer.getRWConfig();
         ArrayList<InforControllerModel> controllers = HandleVersion.getRandomMembers(config.getR() - 1);
         JSONArray allVersion = new JSONArray();
+
+        JSONObject logDetail = new JSONObject();
+        logDetail.put("targetIp", KcsgListenerManager.myIpAddress);
+        logDetail.put("start", java.time.LocalDateTime.now());
         for (InforControllerModel dstController : controllers) {
             JSONObject getVer = handleReadTestPing(dstController);
             if (getVer != null) {
@@ -100,10 +104,6 @@ public class ApiManager implements KcsgCommunicateApiService {
             }
         }
         allVersion.put(new JSONObject(HandleVersion.getVersions()));
-
-        JSONObject logDetail = new JSONObject();
-        logDetail.put("targetIp", KcsgListenerManager.myIpAddress);
-        logDetail.put("start", java.time.LocalDateTime.now());
         boolean checkAllSuccess = true;
         for (int i = 0; i < verFromServer.length(); i++) {
             boolean checkSuccess = false;

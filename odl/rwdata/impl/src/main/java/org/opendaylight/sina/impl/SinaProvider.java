@@ -582,6 +582,10 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         //doc version tu r controller khac
         ConfigRWModel config = HandleCallServer.getRWConfig();
         ArrayList<InforControllerModel> controllers = HandleVersion.getRandomMembers(config.getR() - 1);
+
+        JSONObject logDetail = new JSONObject();
+        logDetail.put("targetIp", myIpAddress);
+        logDetail.put("start", java.time.LocalDateTime.now());
         JSONArray allVersion = new JSONArray();
         for (InforControllerModel dstController : controllers) {
             JSONObject getVer = handleReadTestPing(dstController);
@@ -592,9 +596,6 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         allVersion.put(new JSONObject(HandleVersion.getVersions()));
         LOG.info(MSG, "all version " + allVersion.toString());
 
-        JSONObject logDetail = new JSONObject();
-        logDetail.put("targetIp", myIpAddress);
-        logDetail.put("start", java.time.LocalDateTime.now());
         boolean checkAllSuccess = true;
         for (int i = 0; i < verFromServer.length(); i++) {
             boolean checkSuccess = false;
