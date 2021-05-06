@@ -562,9 +562,16 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
     @SuppressWarnings(value = { "UPM_UNCALLED_PRIVATE_METHOD" })
     @SuppressFBWarnings(value = { "UPM_UNCALLED_PRIVATE_METHOD" })
     private JSONObject readDataTestPing() {
+        //doc version tu server truoc
+        JSONArray verFromServer = HandleCallServer.getVersionsFromServer();
+        LOG.info(MSG, "version from server " + verFromServer);
+        if (verFromServer == null) {
+            return null;
+        }
+
+        //doc version tu r controller khac
         ConfigRWModel config = HandleCallServer.getRWConfig();
         ArrayList<InforControllerModel> controllers = HandleVersion.getRandomMembers(config.getR() - 1);
-
         JSONArray allVersion = new JSONArray();
         for (InforControllerModel dstController : controllers) {
             JSONObject getVer = handleReadTestPing(dstController);
@@ -573,19 +580,11 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
             }
         }
         allVersion.put(new JSONObject(HandleVersion.getVersions()));
-
         LOG.info(MSG, "all version " + allVersion.toString());
 
         JSONObject logDetail = new JSONObject();
         logDetail.put("targetIp", myIpAddress);
         logDetail.put("start", java.time.LocalDateTime.now());
-        JSONArray verFromServer = HandleCallServer.getVersionsFromServer();
-
-        LOG.info(MSG, "version from server " + verFromServer);
-
-        if (verFromServer == null) {
-            return null;
-        }
         boolean checkAllSuccess = true;
         for (int i = 0; i < verFromServer.length(); i++) {
             boolean checkSuccess = false;
@@ -595,7 +594,8 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
             for (int j = 0; j < allVersion.length(); j++) {
                 JSONObject currJson = allVersion.getJSONObject(j);
                 try {
-                    if (currJson.getInt(ip) == version) {
+                    //neu version tu r controller khac >= version tu server thi la dung
+                    if (currJson.getInt(ip) >= version) {
                         checkSuccess = true;
                         break;
                     }
