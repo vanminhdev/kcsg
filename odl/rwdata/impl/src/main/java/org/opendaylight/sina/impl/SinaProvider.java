@@ -139,9 +139,9 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
                 //logChange("SUBTREE_MODIFIED", requestGet());
                 break;
             case WRITE:
-                LOG.info(MSG, "********************* Node Add ************************");
-                LOG.info(MSG, "NETCONF Node was created: " + node.getIdentifier());
-                logChange("WRITE", requestGet());
+                //LOG.info(MSG, "********************* Node Add ************************");
+                //LOG.info(MSG, "NETCONF Node was created: " + node.getIdentifier());
+                //logChange("WRITE", requestGet());
                 break;
             default:
                 throw new IllegalStateException("Unhandled node change" + change);
