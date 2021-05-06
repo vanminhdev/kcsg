@@ -7,6 +7,9 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace KcsWriteLog.Controllers
@@ -45,6 +48,66 @@ namespace KcsWriteLog.Controllers
             return Ok(versions);
         }
 
+        [HttpPut]
+        [Route("reset-versions")]
+        public async Task<IActionResult> ResetVersions()
+        {
+            var controllers = _context.ControllerIps.Where(o => o.IsActive != null && o.IsActive.Value).ToList();
+            var ips = controllers.Select(o => o.RemoteIp).ToList();
+            var versions = _context.VersionData.Where(o => ips.Contains(o.Ip)).ToList();
+            foreach (var ver in versions)
+            {
+                ver.Ver = 0;
+            }
+            _context.SaveChanges();
+
+            HttpClient client = new HttpClient();
+            foreach (var ctrl in controllers)
+            {
+                if (ctrl.ControllerType == "ONOS")
+                {
+                    try
+                    {
+                        StringContent content = new StringContent("", Encoding.UTF8, "application/json");
+                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", "a2FyYWY6a2FyYWY=");
+                        HttpResponseMessage res = await client.PutAsync($"http://{ctrl.RemoteIp}:8181/onos/rwdata/communicate/reset-versions", content);
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.LogError(e.Message);
+                    }
+                }
+                else if (ctrl.ControllerType == "Faucet")
+                {
+                    try
+                    {
+                        StringContent content = new StringContent("", Encoding.UTF8, "application/json");
+                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", "a2FyYWY6a2FyYWY=");
+                        HttpResponseMessage res = await client.PutAsync($"http://{ctrl.RemoteIp}:8080/faucet/sina/versions/reset-versions", content);
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.LogError(e.Message);
+                    }
+                }
+                else if (ctrl.ControllerType == "ODL")
+                {
+                    try
+                    {
+                        StringContent content = new StringContent("", Encoding.UTF8, "application/json");
+                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", "YWRtaW46YWRtaW4=");
+                        HttpResponseMessage res = await client.PostAsync($"http://{ctrl.RemoteIp}:8181/restconf/operations/sina:resetVersions", content);
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.LogError(e.Message);
+                    }
+                }
+            }
+
+            return Ok(versions);
+        }
+
         [HttpPost]
         [Route("update-version")]
         public IActionResult UpdateVersion([FromBody] UpdateVersionModel update)
@@ -61,19 +124,6 @@ namespace KcsWriteLog.Controllers
                     Ip = update.Ip,
                     Ver = update.Version
                 });
-            }
-            _context.SaveChanges();
-            return Ok();
-        }
-
-        [HttpPut]
-        [Route("reset-version")]
-        public IActionResult ResetVersion()
-        {
-            var versions = _context.VersionData.ToList();
-            foreach(var ver in versions)
-            {
-                ver.Ver = 0;
             }
             _context.SaveChanges();
             return Ok();

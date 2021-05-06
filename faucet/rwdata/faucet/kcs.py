@@ -152,6 +152,22 @@ class Kcs:
         return {}
 
     @staticmethod
+    def reset_versions():
+        versions = {}
+        if os.path.isfile(Kcs.file_path['version']):
+            f = open(Kcs.file_path['version'], 'r')
+            versions = json.load(f)
+            f.close()
+
+        for key in versions.keys():
+            versions[key] = 0
+
+        print("reset version: ", versions)
+
+        with open(Kcs.file_path['version'], 'w+') as outfile:
+            json.dump(versions, outfile)
+
+    @staticmethod
     def set_version(ip, version):
         versions = {}
         if os.path.isfile(Kcs.file_path['version']):

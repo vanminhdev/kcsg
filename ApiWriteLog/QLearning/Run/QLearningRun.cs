@@ -50,7 +50,7 @@ namespace QLearningProject.Run
             }
             var problem = new SDNProblem(oldRewards);
 
-            var qLearning = new QLearning(_loggerQlearning, gamma: 0.8, epsilon: 0.4, alpha: 0.6,
+            var qLearning = new QLearning(_loggerQlearning, gamma: 0.8, epsilon: 0.1, alpha: 0.6,
                 problem, numSuccessForAction, numRequestForAction, oldQTable, logState, t, nPull);
 
             _loggerQlearningRun.LogInformation($"r/R: {numSuccessForAction}/{numRequestForAction} = {numSuccessForAction/(double)numRequestForAction}");
@@ -74,13 +74,12 @@ namespace QLearningProject.Run
                 int state = problem.GetState(l1, l2, NOE);
 
                 #region khởi tạo reward chỉ dùng cho epsilon greedy
-                //int action = qLearning.SelectAction(state);
-                //problem.rewards[state][action] = newReward;
+                int action = qLearning.SelectAction(state);
+                problem.rewards[state][action] = newReward;
                 #endregion
 
                 #region khởi tạo q value chỉ (chỉ dùng cho ucb và softmax)
                 //qLearning.InitFirstQValue(state);
-                //L1 L2 NOE
                 #endregion
             }
 

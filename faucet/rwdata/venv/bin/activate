@@ -37,7 +37,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="/home/faucet/kcsg/faucet/rwdata/venv"
+VIRTUAL_ENV="/home/onos/kcsg/faucet/rwdata/venv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"

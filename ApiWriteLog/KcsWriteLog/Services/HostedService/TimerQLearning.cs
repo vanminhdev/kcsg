@@ -108,21 +108,20 @@ namespace KcsWriteLog.Services.HostedService
                 return;
             }
 
-            int l1 = 0;
+            int l1 = 0; //trung bình 1 thay đổi được cập nhật
             if (logWriteForState.Count() > 0)
             {
                 var sum = logWriteForState.Sum(o => o.StaleMetric.TotalMilliseconds);
                 l1 = (int)(sum / logWriteForState.Count()); //trung bình 1 thay đổi được cập nhật
             }
 
-            int l2 = 0;
+            int l2 = 0; //trung bình 1 request nhận được
             if (logReadForState.Count() > 0)
             {
                 var sum = logReadForState.Sum(o => o.ClientMetric.TotalMilliseconds);
                 l2 = (int)(sum / logReadForState.Count()); //trung bình 1 request nhận được
             }
 
-            //l1 = l2 + 10; //để test
             int NOE = (int)(logReadForState.Count(o => !o.IsVersionSuccess) / (double)logReadForState.Count()); //số lần đọc lỗi
             if (NOE < 0)
             {
@@ -140,6 +139,32 @@ namespace KcsWriteLog.Services.HostedService
             oldQTable = newValue.qTable;
             t = newValue.t;
             nPull = newValue.nPull;
+
+
+            var timeRun = DateTime.Now;
+
+            _context.LogQlearningReads.Add(new LogQlearningRead
+            {
+                NumViolations = logReadForState.Where(o => o.ClientMetric > TimeSpan.FromMilliseconds(8)).Count(),
+                TimeRun = timeRun
+            });
+
+            _context.LogQlearningWrites.Add(new LogQlearningWrite
+            {
+                NumViolations = logWriteForState.Where(o => o.StaleMetric > TimeSpan.FromMilliseconds(30)).Count(),
+                TimeRun = timeRun
+            });
+
+            _context.LogQlearningRatios.Add(new LogQlearningRatio
+            {
+                Ratio = numSuccessForAction/(double)numRequestForAction,
+                TimeRun = timeRun
+            });
+
+            if (logWriteForState.Where(o => o.StaleMetric > TimeSpan.FromMilliseconds(30)).Count() >= 5)
+            {
+                newValue.W -= 2;
+            }
 
             _context.Configs.Add(new Config
             {
