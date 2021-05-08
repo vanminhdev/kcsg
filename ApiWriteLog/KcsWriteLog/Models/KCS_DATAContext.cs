@@ -21,6 +21,9 @@ namespace KcsWriteLog.Models
         public virtual DbSet<Config> Configs { get; set; }
         public virtual DbSet<ControllerIp> ControllerIps { get; set; }
         public virtual DbSet<DataTraining> DataTrainings { get; set; }
+        public virtual DbSet<LogQlearningRatio> LogQlearningRatios { get; set; }
+        public virtual DbSet<LogQlearningRead> LogQlearningReads { get; set; }
+        public virtual DbSet<LogQlearningWrite> LogQlearningWrites { get; set; }
         public virtual DbSet<LogRead> LogReads { get; set; }
         public virtual DbSet<LogWrite> LogWrites { get; set; }
         public virtual DbSet<VersionDatum> VersionData { get; set; }
@@ -100,6 +103,27 @@ namespace KcsWriteLog.Models
                 entity.Property(e => e.Time).HasColumnType("datetime");
 
                 entity.Property(e => e.TimeUpdate).HasColumnType("datetime");
+            });
+
+            modelBuilder.Entity<LogQlearningRatio>(entity =>
+            {
+                entity.ToTable("LogQLearningRatio");
+
+                entity.Property(e => e.TimeRun).HasColumnType("datetime");
+            });
+
+            modelBuilder.Entity<LogQlearningRead>(entity =>
+            {
+                entity.ToTable("LogQLearningRead");
+
+                entity.Property(e => e.TimeRun).HasColumnType("datetime");
+            });
+
+            modelBuilder.Entity<LogQlearningWrite>(entity =>
+            {
+                entity.ToTable("LogQLearningWrite");
+
+                entity.Property(e => e.TimeRun).HasColumnType("datetime");
             });
 
             modelBuilder.Entity<LogRead>(entity =>
