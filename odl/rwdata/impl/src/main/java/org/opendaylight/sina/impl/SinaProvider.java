@@ -21,6 +21,7 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.json.JSONArray;
@@ -85,6 +86,10 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
 
     public static final String INIT_PATH = "/home/onos/sdn";
 
+    @SuppressWarnings(value = { "MS_PKGPROTECT", "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD" })
+    @SuppressFBWarnings(value = { "MS_PKGPROTECT", "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD" })
+    private static String nodeState = null;
+
     final InstanceIdentifier<Node> instanceIdentifier = InstanceIdentifier.builder(Nodes.class).child(Node.class)
             .build();
 
@@ -129,28 +134,62 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         final DataObjectModification<Node> node = change.getRootNode();
         switch (node.getModificationType()) {
             case DELETE:
-                LOG.info(MSG, "********************** Node Remove ***************");
-                LOG.info(MSG, "NETCONF Node was removed: " + node.getIdentifier());
-                //logChange("DELETE", requestGet());
+                //LOG.info(MSG, "********************** Node Remove ***************");
+                //LOG.info(MSG, "NETCONF Node was removed: " + node.getIdentifier());
+                handleOnDataChanged();
                 break;
             case SUBTREE_MODIFIED:
-                // LOG.info(MSG, "****************** Node Modify ***************");
-                // LOG.info(MSG, "NETCONF Node was updated: " + node.getIdentifier());
-                // //logChange("SUBTREE_MODIFIED", requestGet());
+                //LOG.info(MSG, "****************** Node Modify ***************");
+                //LOG.info(MSG, "NETCONF Node was updated: " + node.getIdentifier());
+                handleOnDataChanged();
                 break;
             case WRITE:
-                LOG.info(MSG, "********************* Node Add ************************");
-                LOG.info(MSG, "NETCONF Node was created: " + node.getIdentifier());
-                //logChange("WRITE", requestGet());
+                //LOG.info(MSG, "********************* Node Add ************************");
+                //LOG.info(MSG, "NETCONF Node was created: " + node.getIdentifier());
+                handleOnDataChanged();
                 break;
             default:
                 throw new IllegalStateException("Unhandled node change" + change);
         }
     }
 
+    private void handleOnDataChanged() {
+        HashMap<String, Boolean> nodeLinkDowns = new HashMap<>();
+        try {
+            Unirest.setTimeouts(0, 0);
+            String url = "http://localhost:8181/restconf/operational/opendaylight-inventory:nodes";
+            HttpResponse<String> response;
+            response = Unirest.get(url).header("Accept", "application/json")
+                    .header("Authorization", "Basic YWRtaW46YWRtaW4=").asString();
+            JSONObject root = new JSONObject(response.getBody());
+            JSONArray nodes = (root.getJSONObject("nodes")).getJSONArray("node");
+            for (int i = 0; i < nodes.length(); i++) {
+                JSONArray nodeConnector = nodes.getJSONObject(i).getJSONArray("node-connector");
+                for (int j = 0; j < nodeConnector.length(); j++) {
+                    JSONObject nodeConnect = nodeConnector.getJSONObject(j);
+                    String name = nodeConnect.getString("flow-node-inventory:name");
+                    JSONObject state = nodeConnect.getJSONObject("flow-node-inventory:state");
+                    boolean linkDown = state.getBoolean("link-down");
+                    nodeLinkDowns.put(name, linkDown);
+                }
+            }
+            JSONObject result = new JSONObject(nodeLinkDowns);
+            String newNodeState = result.toString();
+            if (nodeState != null && !nodeState.equals(newNodeState)) {
+                LOG.info(MSG,"old: " + nodeState);
+                LOG.info(MSG,"new: " + newNodeState);
+                writeLogChange();
+            }
+            nodeState = result.toString();
+        } catch (UnirestException e) {
+            LOG.error(MSG, e.getMessage());
+        } catch (JSONException e) {
+            LOG.error(MSG, e.getMessage());
+        }
+    }
+
     @Override
     public void onInitialData() {
-
     }
 
     @SuppressWarnings(value = { "UPM_UNCALLED_PRIVATE_METHOD" })
@@ -253,16 +292,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         LOG.info(MSG, "myIp :" + myIpAddress + " serverUrl: " + SERVER_URL);
     }
 
-    @SuppressWarnings(value = { "IP_PARAMETER_IS_DEAD_BUT_OVERWRITTEN", "UPM_UNCALLED_PRIVATE_METHOD" })
-    @SuppressFBWarnings(value = { "IP_PARAMETER_IS_DEAD_BUT_OVERWRITTEN", "UPM_UNCALLED_PRIVATE_METHOD" })
-    private void logChange(String eventType, String data) {
-        //data = ""; //test reset
-        String strJson = "{\"id\":\"" + java.util.UUID.randomUUID() + "\"," + "\"eventType\":\"" + eventType + "\","
-            + "\"time\":\"" + java.time.LocalDateTime.now() + "\"," + "\"data\":" + data + "}\n";
-        writeLogChange(strJson);
-    }
-
-    private void writeLogChange(String strLog) {
+    private void writeLogChange() {
         LOG.info(MSG, "write a log change");
         int ver = HandleVersion.getVersion(myIpAddress);
         HandleVersion.setVersion(myIpAddress, ++ver);
@@ -530,7 +560,6 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         }, 0, 5000);
     }
     */
-
 
     @Override
     public ListenableFuture<RpcResult<GetVersionOutput>> getVersion(GetVersionInput input) {
