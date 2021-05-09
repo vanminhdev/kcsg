@@ -669,7 +669,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
             int version = verFromServer.getJSONObject(i).getInt("version");
 
             long maxTime = 0;
-            int minSubVer = 0; //max hieu ver tu server va tu cac controller cho moi ip
+            int minSubVer = 9999; //max hieu ver tu server va tu cac controller cho moi ip
             for (int j = 0; j < allVersion.length(); j++) {
                 JSONObject currJson = allVersion.getJSONObject(j);
                 try {
