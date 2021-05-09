@@ -151,14 +151,14 @@ public class ApiManager implements KcsgCommunicateApiService {
             int version = verFromServer.getJSONObject(i).getInt("version");
 
             long maxTime = 0;
-            int maxSubVer = 0; //max hieu ver tu server va tu cac controller cho moi ip
+            int minSubVer = 0; //max hieu ver tu server va tu cac controller cho moi ip
             for (int j = 0; j < allVersion.length(); j++) {
                 JSONObject currJson = allVersion.getJSONObject(j);
                 try {
                     JSONObject versionDetail = currJson.getJSONObject(ip);
                     int subVer = version - versionDetail.getInt("version");
-                    if (subVer > maxSubVer) {
-                        maxSubVer = subVer;
+                    if (subVer < minSubVer && subVer >= 0) {
+                        minSubVer = subVer;
                     }
                     long timeSet = versionDetail.getLong("timeSet");
                     if (timeSet > maxTime) {
@@ -168,7 +168,7 @@ public class ApiManager implements KcsgCommunicateApiService {
                     log.error("error read version cua ip: " + ip);
                 }
             }
-            listVStaleness.add(maxSubVer);
+            listVStaleness.add(minSubVer);
             listTStaleness.add(maxTime);
         }
 
