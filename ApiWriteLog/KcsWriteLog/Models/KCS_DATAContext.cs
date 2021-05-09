@@ -107,6 +107,28 @@ namespace KcsWriteLog.Models
                 entity.Property(e => e.Time).HasColumnType("datetime");
 
                 entity.Property(e => e.TimeUpdate).HasColumnType("datetime");
+
+                entity.Property(e => e.TstalenessAvg).HasColumnName("TStalenessAvg");
+
+                entity.Property(e => e.VstalenessAvg).HasColumnName("VStalenessAvg");
+
+                entity.Property(e => e.VstalenessMax).HasColumnName("VStalenessMax");
+
+                entity.Property(e => e.VstalenessMin).HasColumnName("VStalenessMin");
+            });
+
+            modelBuilder.Entity<LogLatencyRead>(entity =>
+            {
+                entity.ToTable("LogLatencyRead");
+
+                entity.Property(e => e.TimeRun).HasColumnType("datetime");
+            });
+
+            modelBuilder.Entity<LogLatencyWrite>(entity =>
+            {
+                entity.ToTable("LogLatencyWrite");
+
+                entity.Property(e => e.TimeRun).HasColumnType("datetime");
             });
 
             modelBuilder.Entity<LogLatencyRead>(entity =>
