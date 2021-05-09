@@ -445,7 +445,7 @@ class Kcs:
                     detail_version = vers_in_all[ip]
                     sub_ver = ver - detail_version["version"]
                     time_set = detail_version["timeSet"]
-                    if sub_ver <= min_subver:
+                    if sub_ver < min_subver and sub_ver >= 0:
                         min_subver = sub_ver
                     if time_set > max_time:
                         max_time = time_set
