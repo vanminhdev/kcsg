@@ -426,7 +426,7 @@ class Faucet(RyuAppBase):
     def scanner(self):
         print('read data...')
         Kcs.read_data()
-        Timer(5, self.scanner).start()
+        #Timer(5, self.scanner).start()
 
 
 url = "/faucet/sina"

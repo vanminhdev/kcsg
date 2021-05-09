@@ -117,17 +117,17 @@ namespace QLearningProject.MachineLearning
                 }
 
                 var diff = _numCtrl * ((1 - CSC) / CSCBase);
-                if (diff <= 0.5)
+                if (diff <= 8)
                 {
-                    action = _random.Next(0, 2);
+                    action = _random.Next(4, 6);
                 }
-                else if (diff > 0.5 && diff < 1)
+                else if (diff > 8 && diff < 11)
                 {
                     action = _random.Next(2, 4);
                 }
                 else //
                 {
-                    action = _random.Next(4, 6);
+                    action = _random.Next(0, 2);
                 }
             }
             else

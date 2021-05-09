@@ -167,18 +167,19 @@ namespace QLearningProject.MachineLearning
             if (n < _epsilon)
             {
                 var div = numSuccessForAction / (double)numRequestForAction;
-                if (div <= 0.5)
-                {
-                    action = _random.Next(0, 2);
-                }
-                else if (div > 0.5 && div < 1)
-                {
-                    action = _random.Next(2, 4);
-                }
-                else //== 1
-                {
-                    action = _random.Next(4, 6);
-                }
+                action = _random.Next(0, 6);
+                //if (div <= 0.5)
+                //{
+                //    action = _random.Next(0, 2);
+                //}
+                //else if (div > 0.5 && div < 1)
+                //{
+                //    action = _random.Next(2, 4);
+                //}
+                //else //== 1
+                //{
+                //    action = _random.Next(4, 6);
+                //}
             }
             else
             {
