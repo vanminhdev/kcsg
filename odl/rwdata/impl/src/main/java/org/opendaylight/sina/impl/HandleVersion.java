@@ -17,9 +17,11 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Random;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.opendaylight.sina.impl.models.InforControllerModel;
 import org.slf4j.Logger;
@@ -39,12 +41,18 @@ public final class HandleVersion {
 
         InforControllerModel local = getLocal();
         if (local != null) {
-            jsonVersion.put(local.getIp(), 0);
+            JSONObject jsonDetailVersion = new JSONObject();
+            jsonDetailVersion.put("version", 0);
+            jsonDetailVersion.put("timeSet", System.currentTimeMillis());
+            jsonVersion.put(local.getIp(), jsonDetailVersion);
         }
 
         ArrayList<InforControllerModel> mems = getMembers();
         for (InforControllerModel mem : mems) {
-            jsonVersion.put(mem.getIp(), 0);
+            JSONObject jsonDetailVersion = new JSONObject();
+            jsonDetailVersion.put("version", 0);
+            jsonDetailVersion.put("timeSet", System.currentTimeMillis());
+            jsonVersion.put(mem.getIp(), jsonDetailVersion);
         }
         Writer outputStreamWriter = null;
         BufferedWriter bufferWriter = null;
@@ -66,7 +74,7 @@ public final class HandleVersion {
                     outputStreamWriter.close();
                 }
             } catch (IOException e) {
-                //LOG.error(MSG, e.getMessage(), e);
+                LOG.error(MSG, e.getMessage());
             }
         }
     }
@@ -84,10 +92,13 @@ public final class HandleVersion {
             String line;
 
             while ((line = buffReader.readLine()) != null) {
-                JSONObject obj = new JSONObject(line);
-                return obj.getInt(ip);
+                JSONObject jsonVersion = new JSONObject(line);
+                JSONObject jsonDetail = jsonVersion.getJSONObject(ip);
+                return jsonDetail.getInt("version");
             }
         } catch (IOException e) {
+            LOG.error(MSG, e.getMessage());
+        } catch (JSONException e) {
             LOG.error(MSG, e.getMessage());
         } finally {
             try {
@@ -98,7 +109,7 @@ public final class HandleVersion {
                     inputStreamReader.close();
                 }
             } catch (IOException e) {
-                //LOG.error(MSG, e.getMessage());
+                LOG.error(MSG, e.getMessage());
             }
         }
         return 0;
@@ -127,7 +138,7 @@ public final class HandleVersion {
                     inputStreamReader.close();
                 }
             } catch (IOException e) {
-                //LOG.error(MSG, e.getMessage());
+                LOG.error(MSG, e.getMessage());
             }
         }
         return null;
@@ -159,14 +170,17 @@ public final class HandleVersion {
                     inputStreamReader.close();
                 }
             } catch (IOException e) {
-                //LOG.error(MSG, e.getMessage(), e);
+                LOG.error(MSG, e.getMessage());
             }
         }
 
         if (jsonVersion == null) {
             return;
         }
-        jsonVersion.put(ip, version);
+        JSONObject jsonDetailVersion = new JSONObject();
+        jsonDetailVersion.put("version", version);
+        jsonDetailVersion.put("timeSet", System.currentTimeMillis());
+        jsonVersion.put(ip, jsonDetailVersion);
 
         Writer outputStreamWriter = null;
         BufferedWriter bufferWriter = null;
@@ -188,7 +202,7 @@ public final class HandleVersion {
                     outputStreamWriter.close();
                 }
             } catch (IOException e) {
-                //LOG.error(MSG, e.getMessage(), e);
+                LOG.error(MSG, e.getMessage());
             }
         }
     }
@@ -319,7 +333,7 @@ public final class HandleVersion {
                     inputStreamReader.close();
                 }
             } catch (IOException e) {
-                //LOG.error(MSG, e.getMessage());
+                LOG.error(MSG, e.getMessage());
             }
         }
         return mems;
@@ -417,6 +431,76 @@ public final class HandleVersion {
             }
         }
         return result;
+    }
+
+    public static void resetVersions() {
+        String path = INIT_PATH;
+        JSONObject jsonVersion = null;
+        InputStreamReader inputStreamReader = null;
+        BufferedReader buffReader = null;
+        try {
+            inputStreamReader = new InputStreamReader(
+                new FileInputStream(path + "/version.json"), StandardCharsets.UTF_8
+            );
+            buffReader = new BufferedReader(inputStreamReader);
+            String line;
+
+            while ((line = buffReader.readLine()) != null) {
+                jsonVersion = new JSONObject(line);
+            }
+        } catch (IOException e) {
+            LOG.error(MSG, e.getMessage());
+        } finally {
+            try {
+                if (buffReader != null) {
+                    buffReader.close();
+                }
+                if (inputStreamReader != null) {
+                    inputStreamReader.close();
+                }
+            } catch (IOException e) {
+                LOG.error(MSG, e.getMessage());
+            }
+        }
+
+        if (jsonVersion == null) {
+            return;
+        }
+
+        Iterator<String> keys = jsonVersion.keys();
+        while (keys.hasNext()) {
+            String key = keys.next();
+            JSONObject jsonDetailVersion = new JSONObject();
+            jsonDetailVersion.put("version", 0);
+            jsonDetailVersion.put("timeSet", System.currentTimeMillis());
+            jsonVersion.put(key, jsonDetailVersion);
+        }
+
+        LOG.info(MSG, "reset version: " + jsonVersion.toString());
+
+        Writer outputStreamWriter = null;
+        BufferedWriter bufferWriter = null;
+        try {
+            outputStreamWriter = new OutputStreamWriter(
+                new FileOutputStream(path + "/version.json", false),
+                StandardCharsets.UTF_8
+            );
+            bufferWriter = new BufferedWriter(outputStreamWriter);
+            bufferWriter.write(jsonVersion.toString());
+        } catch (IOException e) {
+            LOG.error(MSG, e.getMessage());
+        } finally {
+            try {
+                if (bufferWriter != null) {
+                    bufferWriter.close();
+                }
+                if (outputStreamWriter != null) {
+                    outputStreamWriter.close();
+                }
+            } catch (IOException e) {
+                LOG.error(MSG, e.getMessage());
+            }
+        }
     }
 }
 

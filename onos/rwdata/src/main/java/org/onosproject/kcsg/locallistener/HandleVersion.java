@@ -14,6 +14,7 @@ import java.util.Iterator;
 import java.util.Random;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.onosproject.kcsg.locallistener.models.InforControllerModel;
 import org.slf4j.Logger;
@@ -32,12 +33,18 @@ public final class HandleVersion {
 
         InforControllerModel local = getLocal();
         if (local != null) {
-            jsonVersion.put(local.getIp(), 0);
+            JSONObject jsonDetailVersion = new JSONObject();
+            jsonDetailVersion.put("version", 0);
+            jsonDetailVersion.put("timeSet", System.currentTimeMillis());
+            jsonVersion.put(local.getIp(), jsonDetailVersion);
         }
 
         ArrayList<InforControllerModel> mems = getMembers();
         for (InforControllerModel mem : mems) {
-            jsonVersion.put(mem.getIp(), 0);
+            JSONObject jsonDetailVersion = new JSONObject();
+            jsonDetailVersion.put("version", 0);
+            jsonDetailVersion.put("timeSet", System.currentTimeMillis());
+            jsonVersion.put(mem.getIp(), jsonDetailVersion);
         }
         Writer outputStreamWriter = null;
         BufferedWriter bufferWriter = null;
@@ -48,8 +55,8 @@ public final class HandleVersion {
             );
             bufferWriter = new BufferedWriter(outputStreamWriter);
             bufferWriter.write(jsonVersion.toString());
-        } catch (Exception e) {
-            //log.error(e.getMessage(), e);
+        } catch (IOException e) {
+            log.error(e.getMessage());
         } finally {
             try {
                 if (bufferWriter != null) {
@@ -59,7 +66,7 @@ public final class HandleVersion {
                     outputStreamWriter.close();
                 }
             } catch (IOException e) {
-                //log.error(e.getMessage(), e);
+                log.error(e.getMessage());
             }
         }
     }
@@ -77,11 +84,14 @@ public final class HandleVersion {
             String line;
 
             while ((line = buffReader.readLine()) != null) {
-                JSONObject obj = new JSONObject(line);
-                return obj.getInt(ip);
+                JSONObject jsonVersion = new JSONObject(line);
+                JSONObject jsonDetail = jsonVersion.getJSONObject(ip);
+                return jsonDetail.getInt("version");
             }
-        } catch (Exception e) {
-            //log.error(e.getMessage());
+        } catch (IOException e) {
+            log.error(e.getMessage());
+        } catch (JSONException e) {
+            log.error(e.getMessage());
         } finally {
             try {
                 if (buffReader != null) {
@@ -91,7 +101,7 @@ public final class HandleVersion {
                     inputStreamReader.close();
                 }
             } catch (IOException e) {
-                //log.error(e.getMessage());
+                log.error(e.getMessage());
             }
         }
         return 0;
@@ -109,8 +119,8 @@ public final class HandleVersion {
             buffReader = new BufferedReader(inputStreamReader);
             String line = buffReader.readLine();
             return line;
-        } catch (Exception e) {
-            //log.error(e.getMessage());
+        } catch (IOException e) {
+            log.error(e.getMessage());
         } finally {
             try {
                 if (buffReader != null) {
@@ -120,7 +130,7 @@ public final class HandleVersion {
                     inputStreamReader.close();
                 }
             } catch (IOException e) {
-                //log.error(e.getMessage());
+                log.error(e.getMessage());
             }
         }
         return null;
@@ -141,8 +151,8 @@ public final class HandleVersion {
             while ((line = buffReader.readLine()) != null) {
                 jsonVersion = new JSONObject(line);
             }
-        } catch (Exception e) {
-            //log.error(e.getMessage(), e);
+        } catch (IOException e) {
+            log.error(e.getMessage());
         } finally {
             try {
                 if (buffReader != null) {
@@ -152,14 +162,17 @@ public final class HandleVersion {
                     inputStreamReader.close();
                 }
             } catch (IOException e) {
-                //log.error(e.getMessage(), e);
+                log.error(e.getMessage());
             }
         }
 
         if (jsonVersion == null) {
             return;
         }
-        jsonVersion.put(ip, version);
+        JSONObject jsonDetailVersion = new JSONObject();
+        jsonDetailVersion.put("version", version);
+        jsonDetailVersion.put("timeSet", System.currentTimeMillis());
+        jsonVersion.put(ip, jsonDetailVersion);
 
         Writer outputStreamWriter = null;
         BufferedWriter bufferWriter = null;
@@ -170,8 +183,8 @@ public final class HandleVersion {
             );
             bufferWriter = new BufferedWriter(outputStreamWriter);
             bufferWriter.write(jsonVersion.toString());
-        } catch (Exception e) {
-            //log.error(e.getMessage(), e);
+        } catch (IOException e) {
+            log.error(e.getMessage());
         } finally {
             try {
                 if (bufferWriter != null) {
@@ -181,7 +194,7 @@ public final class HandleVersion {
                     outputStreamWriter.close();
                 }
             } catch (IOException e) {
-                //log.error(e.getMessage(), e);
+                log.error(e.getMessage());
             }
         }
     }
@@ -302,7 +315,7 @@ public final class HandleVersion {
                 mems.add(model);
             }
         } catch (IOException e) {
-            //log.error(MSG, e.getMessage());
+            //log.error(e.getMessage());
         } finally {
             try {
                 if (buffReader != null) {
@@ -312,7 +325,7 @@ public final class HandleVersion {
                     inputStreamReader.close();
                 }
             } catch (IOException e) {
-                //LOG.error(MSG, e.getMessage());
+                //log.error(e.getMessage());
             }
         }
         return mems;
@@ -359,7 +372,7 @@ public final class HandleVersion {
                 controllers.add(model);
             }
         } catch (IOException e) {
-            //LOG.error(MSG, e.getMessage());
+            //log.error(e.getMessage());
         } finally {
             try {
                 if (buffReader != null) {
@@ -369,7 +382,7 @@ public final class HandleVersion {
                     inputStreamReader.close();
                 }
             } catch (IOException e) {
-                //LOG.error(MSG, e.getMessage());
+                //log.error(e.getMessage());
             }
         }
         return controllers;
@@ -428,7 +441,7 @@ public final class HandleVersion {
                 jsonVersion = new JSONObject(line);
             }
         } catch (IOException e) {
-            log.error(e.getMessage(), e);
+            log.error(e.getMessage());
         } finally {
             try {
                 if (buffReader != null) {
@@ -438,7 +451,7 @@ public final class HandleVersion {
                     inputStreamReader.close();
                 }
             } catch (IOException e) {
-                log.error(e.getMessage(), e);
+                log.error(e.getMessage());
             }
         }
 
@@ -449,7 +462,10 @@ public final class HandleVersion {
         Iterator<String> keys = jsonVersion.keys();
         while (keys.hasNext()) {
             String key = keys.next();
-            jsonVersion.put(key, 0);
+            JSONObject jsonDetailVersion = new JSONObject();
+            jsonDetailVersion.put("version", 0);
+            jsonDetailVersion.put("timeSet", System.currentTimeMillis());
+            jsonVersion.put(key, jsonDetailVersion);
         }
 
         log.info("reset version: " + jsonVersion.toString());
@@ -464,7 +480,7 @@ public final class HandleVersion {
             bufferWriter = new BufferedWriter(outputStreamWriter);
             bufferWriter.write(jsonVersion.toString());
         } catch (IOException e) {
-            log.error(e.getMessage(), e);
+            log.error(e.getMessage());
         } finally {
             try {
                 if (bufferWriter != null) {
@@ -474,7 +490,7 @@ public final class HandleVersion {
                     outputStreamWriter.close();
                 }
             } catch (IOException e) {
-                log.error(e.getMessage(), e);
+                log.error(e.getMessage());
             }
         }
     }
