@@ -469,7 +469,7 @@ class Kcs:
         time_read = int(round(time.time() * 1000))
         tstaleness = 0
         if len(list_tstaleness) > 0:
-            tstaleness = time_read - min(list_tstaleness)
+            tstaleness = time_read - max(list_tstaleness)
         log_detail["tStaleness"] = tstaleness
         return log_detail
 
