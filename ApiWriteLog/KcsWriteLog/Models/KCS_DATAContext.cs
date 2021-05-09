@@ -21,8 +21,15 @@ namespace KcsWriteLog.Models
         public virtual DbSet<Config> Configs { get; set; }
         public virtual DbSet<ControllerIp> ControllerIps { get; set; }
         public virtual DbSet<DataTraining> DataTrainings { get; set; }
+        public virtual DbSet<LogLatencyRead> LogLatencyReads { get; set; }
+        public virtual DbSet<LogLatencyWrite> LogLatencyWrites { get; set; }
+        public virtual DbSet<LogQlearningRatio> LogQlearningRatios { get; set; }
+        public virtual DbSet<LogQlearningRead> LogQlearningReads { get; set; }
+        public virtual DbSet<LogQlearningWrite> LogQlearningWrites { get; set; }
         public virtual DbSet<LogRead> LogReads { get; set; }
         public virtual DbSet<LogWrite> LogWrites { get; set; }
+        public virtual DbSet<Qtable> Qtables { get; set; }
+        public virtual DbSet<Temp> Temps { get; set; }
         public virtual DbSet<VersionDatum> VersionData { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -30,7 +37,7 @@ namespace KcsWriteLog.Models
             if (!optionsBuilder.IsConfigured)
             {
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
-                optionsBuilder.UseSqlServer("Server=.\\SQLEXPRESS;Database=KCS_DATA;User ID=sa;Password=1234567");
+                optionsBuilder.UseSqlServer("Server=.\\SQLEXPRESS;Database=KCS_DATA;Integrated Security=True");
             }
         }
 
@@ -100,6 +107,63 @@ namespace KcsWriteLog.Models
                 entity.Property(e => e.Time).HasColumnType("datetime");
 
                 entity.Property(e => e.TimeUpdate).HasColumnType("datetime");
+
+                entity.Property(e => e.TstalenessAvg).HasColumnName("TStalenessAvg");
+
+                entity.Property(e => e.VstalenessAvg).HasColumnName("VStalenessAvg");
+
+                entity.Property(e => e.VstalenessMax).HasColumnName("VStalenessMax");
+
+                entity.Property(e => e.VstalenessMin).HasColumnName("VStalenessMin");
+            });
+
+            modelBuilder.Entity<LogLatencyRead>(entity =>
+            {
+                entity.ToTable("LogLatencyRead");
+
+                entity.Property(e => e.TimeRun).HasColumnType("datetime");
+            });
+
+            modelBuilder.Entity<LogLatencyWrite>(entity =>
+            {
+                entity.ToTable("LogLatencyWrite");
+
+                entity.Property(e => e.TimeRun).HasColumnType("datetime");
+            });
+
+            modelBuilder.Entity<LogLatencyRead>(entity =>
+            {
+                entity.ToTable("LogLatencyRead");
+
+                entity.Property(e => e.TimeRun).HasColumnType("datetime");
+            });
+
+            modelBuilder.Entity<LogLatencyWrite>(entity =>
+            {
+                entity.ToTable("LogLatencyWrite");
+
+                entity.Property(e => e.TimeRun).HasColumnType("datetime");
+            });
+
+            modelBuilder.Entity<LogQlearningRatio>(entity =>
+            {
+                entity.ToTable("LogQLearningRatio");
+
+                entity.Property(e => e.TimeRun).HasColumnType("datetime");
+            });
+
+            modelBuilder.Entity<LogQlearningRead>(entity =>
+            {
+                entity.ToTable("LogQLearningRead");
+
+                entity.Property(e => e.TimeRun).HasColumnType("datetime");
+            });
+
+            modelBuilder.Entity<LogQlearningWrite>(entity =>
+            {
+                entity.ToTable("LogQLearningWrite");
+
+                entity.Property(e => e.TimeRun).HasColumnType("datetime");
             });
 
             modelBuilder.Entity<LogRead>(entity =>
@@ -150,6 +214,26 @@ namespace KcsWriteLog.Models
                     .IsUnicode(false);
 
                 entity.Property(e => e.Start).HasColumnType("datetime");
+            });
+
+            modelBuilder.Entity<Qtable>(entity =>
+            {
+                entity.ToTable("QTable");
+
+                entity.Property(e => e.Qvalues)
+                    .IsRequired()
+                    .HasColumnName("QValues");
+
+                entity.Property(e => e.Rewards).IsRequired();
+            });
+
+            modelBuilder.Entity<Temp>(entity =>
+            {
+                entity.ToTable("Temp");
+
+                entity.Property(e => e.Id).ValueGeneratedNever();
+
+                entity.Property(e => e.TimeRun).HasColumnType("datetime");
             });
 
             modelBuilder.Entity<VersionDatum>(entity =>

@@ -24,7 +24,7 @@ namespace QLearningProject.Run
         /// <returns></returns>
         public RWValueVegas Run(int r, int w, int N, int oldNumSuccess, int oldNumRequest, int newNumSuccess, int newNumRequest,
             int l1, int l2, int NOE, int numSuccessForAction, int numRequestForAction, double[][] oldRewards, double[][] oldQTable,
-            LogState[] logState, Queue<double> logCSC)
+            LogState[] logState, Queue<double> logCSC, bool violateRead, bool violateWrite)
         {
             LogState lastState = null;
             if (logState.Length > 0)
@@ -33,14 +33,17 @@ namespace QLearningProject.Run
             }
             var problem = new SDNProblem(oldRewards);
 
-            var qLearning = new QLearningVegas(_loggerQlearning, gamma: 0.8, epsilon: 0.4, alpha: 0.6,
+            var qLearning = new QLearningVegas(_loggerQlearning, gamma: 0.8, epsilon: 0.5, alpha: 0.6,
                 problem, numSuccessForAction, numRequestForAction, oldQTable, logState, logCSC, N);
 
             _loggerQlearningRun.LogInformation($"r/R: {numSuccessForAction}/{numRequestForAction} = {numSuccessForAction / (double)numRequestForAction}");
 
             //tính reward mới
             double newReward = Math.Round((newNumSuccess - oldNumSuccess) / (double)(newNumRequest - oldNumRequest) * 100);
-
+            if (violateRead || violateWrite)
+            {
+                newReward = -100;
+            }
             //state khởi tạo khi training xong
             int initialState = 0;
             if (lastState != null) //cập nhật lại reward tại vị trí (state,action) cũ
@@ -70,6 +73,16 @@ namespace QLearningProject.Run
             {
                 //chạy chọn ra action từ state chỉ định
                 newAction = qLearning.Run(initialState);
+                if (violateRead)
+                {
+                    newAction = 5;
+                }
+
+                if (violateWrite)
+                {
+                    newAction = 4;
+                }
+
                 _loggerQlearningRun.LogInformation($"from state {initialState} new action: {newAction}");
                 int newR = r;
                 int newW = w;

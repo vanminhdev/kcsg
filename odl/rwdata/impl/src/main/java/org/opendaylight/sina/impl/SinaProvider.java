@@ -21,7 +21,10 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 
+import org.checkerframework.checker.units.qual.min;
 import org.eclipse.jdt.annotation.NonNull;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -85,6 +88,10 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
 
     public static final String INIT_PATH = "/home/onos/sdn";
 
+    @SuppressWarnings(value = { "MS_PKGPROTECT", "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD" })
+    @SuppressFBWarnings(value = { "MS_PKGPROTECT", "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD" })
+    private static String nodeState = null;
+
     final InstanceIdentifier<Node> instanceIdentifier = InstanceIdentifier.builder(Nodes.class).child(Node.class)
             .build();
 
@@ -129,28 +136,62 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         final DataObjectModification<Node> node = change.getRootNode();
         switch (node.getModificationType()) {
             case DELETE:
-                LOG.info(MSG, "********************** Node Remove ***************");
-                LOG.info(MSG, "NETCONF Node was removed: " + node.getIdentifier());
-                //logChange("DELETE", requestGet());
+                //LOG.info(MSG, "********************** Node Remove ***************");
+                //LOG.info(MSG, "NETCONF Node was removed: " + node.getIdentifier());
+                handleOnDataChanged();
                 break;
             case SUBTREE_MODIFIED:
-                // LOG.info(MSG, "****************** Node Modify ***************");
-                // LOG.info(MSG, "NETCONF Node was updated: " + node.getIdentifier());
-                // //logChange("SUBTREE_MODIFIED", requestGet());
+                //LOG.info(MSG, "****************** Node Modify ***************");
+                //LOG.info(MSG, "NETCONF Node was updated: " + node.getIdentifier());
+                handleOnDataChanged();
                 break;
             case WRITE:
-                LOG.info(MSG, "********************* Node Add ************************");
-                LOG.info(MSG, "NETCONF Node was created: " + node.getIdentifier());
-                //logChange("WRITE", requestGet());
+                //LOG.info(MSG, "********************* Node Add ************************");
+                //LOG.info(MSG, "NETCONF Node was created: " + node.getIdentifier());
+                handleOnDataChanged();
                 break;
             default:
                 throw new IllegalStateException("Unhandled node change" + change);
         }
     }
 
+    private void handleOnDataChanged() {
+        HashMap<String, Boolean> nodeLinkDowns = new HashMap<>();
+        try {
+            Unirest.setTimeouts(0, 0);
+            String url = "http://localhost:8181/restconf/operational/opendaylight-inventory:nodes";
+            HttpResponse<String> response;
+            response = Unirest.get(url).header("Accept", "application/json")
+                    .header("Authorization", "Basic YWRtaW46YWRtaW4=").asString();
+            JSONObject root = new JSONObject(response.getBody());
+            JSONArray nodes = (root.getJSONObject("nodes")).getJSONArray("node");
+            for (int i = 0; i < nodes.length(); i++) {
+                JSONArray nodeConnector = nodes.getJSONObject(i).getJSONArray("node-connector");
+                for (int j = 0; j < nodeConnector.length(); j++) {
+                    JSONObject nodeConnect = nodeConnector.getJSONObject(j);
+                    String name = nodeConnect.getString("flow-node-inventory:name");
+                    JSONObject state = nodeConnect.getJSONObject("flow-node-inventory:state");
+                    boolean linkDown = state.getBoolean("link-down");
+                    nodeLinkDowns.put(name, linkDown);
+                }
+            }
+            JSONObject result = new JSONObject(nodeLinkDowns);
+            String newNodeState = result.toString();
+            if (nodeState != null && !nodeState.equals(newNodeState)) {
+                LOG.info(MSG,"old: " + nodeState);
+                LOG.info(MSG,"new: " + newNodeState);
+                writeLogChange();
+            }
+            nodeState = result.toString();
+        } catch (UnirestException e) {
+            LOG.error(MSG, e.getMessage());
+        } catch (JSONException e) {
+            LOG.error(MSG, e.getMessage());
+        }
+    }
+
     @Override
     public void onInitialData() {
-
     }
 
     @SuppressWarnings(value = { "UPM_UNCALLED_PRIVATE_METHOD" })
@@ -253,16 +294,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         LOG.info(MSG, "myIp :" + myIpAddress + " serverUrl: " + SERVER_URL);
     }
 
-    @SuppressWarnings(value = { "IP_PARAMETER_IS_DEAD_BUT_OVERWRITTEN", "UPM_UNCALLED_PRIVATE_METHOD" })
-    @SuppressFBWarnings(value = { "IP_PARAMETER_IS_DEAD_BUT_OVERWRITTEN", "UPM_UNCALLED_PRIVATE_METHOD" })
-    private void logChange(String eventType, String data) {
-        //data = ""; //test reset
-        String strJson = "{\"id\":\"" + java.util.UUID.randomUUID() + "\"," + "\"eventType\":\"" + eventType + "\","
-            + "\"time\":\"" + java.time.LocalDateTime.now() + "\"," + "\"data\":" + data + "}\n";
-        writeLogChange(strJson);
-    }
-
-    private void writeLogChange(String strLog) {
+    private void writeLogChange() {
         LOG.info(MSG, "write a log change");
         int ver = HandleVersion.getVersion(myIpAddress);
         HandleVersion.setVersion(myIpAddress, ++ver);
@@ -302,7 +334,6 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         }
         HandleCallServer.sendLogWrite(log);
     }
-
 
     @SuppressWarnings(value = { "DM_DEFAULT_ENCODING" })
     @SuppressFBWarnings(value = { "DM_DEFAULT_ENCODING" })
@@ -531,7 +562,6 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
     }
     */
 
-
     @Override
     public ListenableFuture<RpcResult<GetVersionOutput>> getVersion(GetVersionInput input) {
         JSONObject jsonObject = new JSONObject(input.getData());
@@ -572,30 +602,37 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
     @SuppressWarnings(value = { "UPM_UNCALLED_PRIVATE_METHOD" })
     @SuppressFBWarnings(value = { "UPM_UNCALLED_PRIVATE_METHOD" })
     private JSONObject readDataTestPing() {
+        long timeRead = System.currentTimeMillis();
+
+        //doc version tu server truoc
+        JSONArray verFromServer = HandleCallServer.getVersionsFromServer();
+        LOG.info(MSG, "version from server " + verFromServer);
+        if (verFromServer == null) {
+            return null;
+        }
+
+        //doc version tu r controller khac
         ConfigRWModel config = HandleCallServer.getRWConfig();
         ArrayList<InforControllerModel> controllers = HandleVersion.getRandomMembers(config.getR() - 1);
 
+        JSONObject logDetail = new JSONObject();
+        logDetail.put("targetIp", myIpAddress);
+        logDetail.put("start", java.time.LocalDateTime.now());
         JSONArray allVersion = new JSONArray();
         for (InforControllerModel dstController : controllers) {
             JSONObject getVer = handleReadTestPing(dstController);
             if (getVer != null) {
                 allVersion.put(getVer);
             }
+            else {
+                LOG.error(MSG, "get ver test ping from " + dstController.getIp()
+                    + " type: " + dstController.getKindController());
+            }
         }
+        //them ver cua controller nay
         allVersion.put(new JSONObject(HandleVersion.getVersions()));
-
         LOG.info(MSG, "all version " + allVersion.toString());
 
-        JSONObject logDetail = new JSONObject();
-        logDetail.put("targetIp", myIpAddress);
-        logDetail.put("start", java.time.LocalDateTime.now());
-        JSONArray verFromServer = HandleCallServer.getVersionsFromServer();
-
-        LOG.info(MSG, "version from server " + verFromServer);
-
-        if (verFromServer == null) {
-            return null;
-        }
         boolean checkAllSuccess = true;
         for (int i = 0; i < verFromServer.length(); i++) {
             boolean checkSuccess = false;
@@ -605,12 +642,14 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
             for (int j = 0; j < allVersion.length(); j++) {
                 JSONObject currJson = allVersion.getJSONObject(j);
                 try {
-                    if (currJson.getInt(ip) == version) {
+                    //neu version tu r controller khac >= version tu server thi la dung
+                    JSONObject versionDetail = currJson.getJSONObject(ip);
+                    if (versionDetail.getInt("version") >= version) {
                         checkSuccess = true;
                         break;
                     }
                 } catch (JSONException e) {
-                    LOG.error(MSG, "error currJson");
+                    LOG.error(MSG, "error read version cua ip: " + ip);
                 }
             }
 
@@ -621,6 +660,60 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         }
         logDetail.put("end", java.time.LocalDateTime.now());
         logDetail.put("isVersionSuccess", checkAllSuccess);
+
+        ArrayList<Long> listTStaleness = new ArrayList<>();
+        ArrayList<Integer> listVStaleness = new ArrayList<>();
+        //tinh v staleness va tinh t staleness
+        for (int i = 0; i < verFromServer.length(); i++) {
+            String ip = verFromServer.getJSONObject(i).getString("ip");
+            int version = verFromServer.getJSONObject(i).getInt("version");
+
+            long maxTime = 0;
+            int minSubVer = 0; //max hieu ver tu server va tu cac controller cho moi ip
+            for (int j = 0; j < allVersion.length(); j++) {
+                JSONObject currJson = allVersion.getJSONObject(j);
+                try {
+                    JSONObject versionDetail = currJson.getJSONObject(ip);
+                    int subVer = version - versionDetail.getInt("version");
+                    if (subVer < minSubVer && subVer >= 0) {
+                        minSubVer = subVer;
+                    }
+                    long timeSet = versionDetail.getLong("timeSet");
+                    if (timeSet > maxTime) {
+                        maxTime = timeSet;
+                    }
+                } catch (JSONException e) {
+                    LOG.error(MSG, "error read version cua ip: " + ip);
+                }
+            }
+            listVStaleness.add(minSubVer);
+            listTStaleness.add(maxTime);
+        }
+
+        int max = 0;
+        int min = 0;
+        float avg = 0;
+        if (listVStaleness.size() > 0) {
+            max = Collections.max(listVStaleness);
+            min = Collections.min(listVStaleness);
+            int sum = 0;
+            for (Integer mark : listVStaleness) {
+                sum += mark;
+            }
+            avg = (float)sum / listVStaleness.size();
+        }
+
+        long tstaleness = 0;
+        if (listTStaleness.size() > 0) {
+            long minTimeSet = Collections.min(listTStaleness);
+            tstaleness = timeRead - minTimeSet;
+        }
+
+        logDetail.put("vStalenessMax", max);
+        logDetail.put("vStalenessMin", min);
+        logDetail.put("vStalenessAvg", avg);
+
+        logDetail.put("tStaleness", tstaleness);
 
         LOG.info(MSG, logDetail);
         return logDetail;

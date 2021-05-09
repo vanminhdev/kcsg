@@ -149,9 +149,9 @@ namespace QLearningProject.MachineLearning
         {
             if (initialState < 0 || initialState > _qLearningProblem.NumberOfStates)
                 throw new ArgumentException($"The initial state can be between [0-{_qLearningProblem.NumberOfStates}", nameof(initialState));
-            //return SelectAction(initialState);
+            return SelectAction(initialState);
             //return UCBSelectAction(_t, initialState);
-            return SoftMaxSelectAction(initialState);
+            //return SoftMaxSelectAction(initialState);
         }
 
         /// <summary>
@@ -167,18 +167,19 @@ namespace QLearningProject.MachineLearning
             if (n < _epsilon)
             {
                 var div = numSuccessForAction / (double)numRequestForAction;
-                if (div <= 0.5)
-                {
-                    action = _random.Next(0, 2);
-                }
-                else if (div > 0.5 && div < 1)
-                {
-                    action = _random.Next(2, 4);
-                }
-                else //== 1
-                {
-                    action = _random.Next(4, 6);
-                }
+                action = _random.Next(0, 6);
+                //if (div <= 0.5)
+                //{
+                //    action = _random.Next(0, 2);
+                //}
+                //else if (div > 0.5 && div < 1)
+                //{
+                //    action = _random.Next(2, 4);
+                //}
+                //else //== 1
+                //{
+                //    action = _random.Next(4, 6);
+                //}
             }
             else
             {
@@ -304,10 +305,10 @@ namespace QLearningProject.MachineLearning
         /// <param name="currentState">trạng thái đang xét</param>
         private void TakeAction(int currentState)
         {
-            #region  select action dựa theo q value max hoặc theo r/R
-            //int action = SelectAction(currentState);
+            #region select action dựa theo q value max hoặc theo r/R
+            int action = SelectAction(currentState);
             //int action = UCBSelectAction(_t, currentState);
-            int action = SoftMaxSelectAction(currentState);
+            //int action = SoftMaxSelectAction(currentState);
             #endregion
 
             #region lấy reward
@@ -321,15 +322,15 @@ namespace QLearningProject.MachineLearning
             //tính ra value mới
             double qCurrentState = _qTable[currentState][action] + _alpha * (saReward + _gamma * maxQValue - _qTable[currentState][action]);
             //cập nhật vào q table tại s(curr) a(random)
-            //_qTable[currentState][action] = qCurrentState;
+            _qTable[currentState][action] = qCurrentState;
             #endregion
 
             #region tính q value theo ucb & soft max
             //refer: https://github.com/SahanaRamnath/MultiArmedBandit_RL/tree/master/UCB
             //tính q value cho ucb
-            var sa = new StateAndAction { State = currentState, Action = action };
-            double qCurrentStateNew = _qTable[currentState][action] + (saReward - _qTable[currentState][action]) / _nPull[sa];
-            _qTable[currentState][action] = qCurrentStateNew;
+            //var sa = new StateAndAction { State = currentState, Action = action };
+            //double qCurrentStateNew = _qTable[currentState][action] + (saReward - _qTable[currentState][action]) / _nPull[sa];
+            //_qTable[currentState][action] = qCurrentStateNew;
             #endregion
         }
 
