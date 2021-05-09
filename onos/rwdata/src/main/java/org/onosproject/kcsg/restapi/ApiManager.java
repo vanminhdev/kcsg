@@ -85,8 +85,6 @@ public class ApiManager implements KcsgCommunicateApiService {
     }
 
     private JSONObject readDataTestPing() {
-        long timeRead = System.currentTimeMillis();
-
         //doc version tu server truoc
         JSONArray verFromServer = HandleCallServer.getVersionsFromServer();
         log.info("version from server " + verFromServer);
@@ -185,10 +183,11 @@ public class ApiManager implements KcsgCommunicateApiService {
             avg = (float) sum / listVStaleness.size();
         }
 
+        long timeRead = System.currentTimeMillis();
         long tstaleness = 0;
         if (listTStaleness.size() > 0) {
-            long minTimeSet = Collections.min(listTStaleness);
-            tstaleness = timeRead - minTimeSet;
+            long maxTimeSet = Collections.min(listTStaleness);
+            tstaleness = timeRead - maxTimeSet;
         }
 
         logDetail.put("vStalenessMax", max);
