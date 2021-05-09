@@ -8,7 +8,9 @@ using QLearningProject.Run;
 using QLearningProject.Run.Models;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -51,6 +53,20 @@ namespace KcsWriteLog.Services.HostedService
             _loggerQlearningRun.LogInformation("Timed QLearning Hosted Service running.");
             _timer = new Timer(DoWork, null, TimeSpan.Zero,
                 TimeSpan.FromSeconds(10));
+            #region load qtable from db
+            if (File.Exists(@"C:\Users\84389\Documents\sdn\jsonRewards.json") && File.Exists(@"C:\Users\84389\Documents\sdn\jsonQtable.json"))
+            {
+                string jsonRewards = File.ReadAllText(@"C:\Users\84389\Documents\sdn\jsonRewards.json");
+                string jsonQtable = File.ReadAllText(@"C:\Users\84389\Documents\sdn\jsonRewards.json");
+                oldRewards = JsonSerializer.Deserialize<double[][]>(jsonRewards);
+                oldQTable = JsonSerializer.Deserialize<double[][]>(jsonQtable);
+            }
+            else
+            {
+                _loggerQlearningRun.LogWarning("DB not have Qtable");
+            }
+            #endregion
+
             return Task.CompletedTask;
         }
 
@@ -112,6 +128,27 @@ namespace KcsWriteLog.Services.HostedService
                 return;
             }
 
+            #region latency
+            double thresholdRead = 8;
+            double thresholdWrite = 86;
+
+            bool violateRead = false;
+            bool violateWrite = false;
+            TimeSpan LatencyReadAvg = TimeSpan.FromMilliseconds(0);
+            TimeSpan LatencyWriteAvg = TimeSpan.FromMilliseconds(0);
+            if (logReadForState.Count > 0)
+            {
+                LatencyReadAvg = TimeSpan.FromMilliseconds(logReadForState.Average(o => o.ClientMetric.TotalMilliseconds));
+                violateRead = LatencyReadAvg > TimeSpan.FromMilliseconds(thresholdRead);
+            }
+
+            if (logWriteForState.Count > 0)
+            {
+                LatencyWriteAvg = TimeSpan.FromMilliseconds(logWriteForState.Average(o => o.StaleMetric.TotalMilliseconds));
+                violateWrite = LatencyWriteAvg > TimeSpan.FromMilliseconds(thresholdWrite);
+            }
+            #endregion
+
             int l1 = 0;
             if (logWriteForState.Count() > 0)
             {
@@ -137,10 +174,44 @@ namespace KcsWriteLog.Services.HostedService
             int N = _context.ControllerIps.Where(o => o.IsActive != null && o.IsActive.Value).Count(); //số controller
 
             var newValue = _qLearning.Run(rwConfig.R, rwConfig.W, N, oldNumSuccess, oldNumRequest, newNumSuccess, newNumRequest,
-                l1, l2, NOE, numSuccessForAction, numRequestForAction, oldRewards, oldQTable, _logState.ToArray(), _logCSC);
+                l1, l2, NOE, numSuccessForAction, numRequestForAction, oldRewards, oldQTable, _logState.ToArray(), _logCSC, violateRead, violateWrite);
 
             oldRewards = newValue.rewards;
             oldQTable = newValue.qTable;
+
+            #region log ve bieu do
+            var timeRun = DateTime.Now;
+
+            _context.LogQlearningReads.Add(new LogQlearningRead
+            {
+                NumViolations = logReadForState.Where(o => o.ClientMetric > TimeSpan.FromMilliseconds(thresholdRead)).Count(),
+                TimeRun = timeRun
+            });
+
+            _context.LogQlearningWrites.Add(new LogQlearningWrite
+            {
+                NumViolations = logWriteForState.Where(o => o.StaleMetric > TimeSpan.FromMilliseconds(thresholdWrite)).Count(),
+                TimeRun = timeRun
+            });
+
+            _context.LogQlearningRatios.Add(new LogQlearningRatio
+            {
+                Ratio = numSuccessForAction / (double)numRequestForAction,
+                TimeRun = timeRun
+            });
+
+            _context.LogLatencyReads.Add(new LogLatencyRead
+            {
+                Latency = LatencyReadAvg.TotalMilliseconds,
+                TimeRun = timeRun
+            });
+
+            _context.LogLatencyWrites.Add(new LogLatencyWrite
+            {
+                Latency = LatencyWriteAvg.TotalMilliseconds,
+                TimeRun = timeRun
+            });
+            #endregion
 
             _context.Configs.Add(new Config
             {
@@ -160,6 +231,13 @@ namespace KcsWriteLog.Services.HostedService
             _loggerQlearningRun.LogInformation($"new R: {newValue.R}, W: {newValue.W}");
             _loggerQlearningRun.LogInformation("==========================================================================================================================");
             _context.SaveChanges();
+
+            #region save q table to text
+            //var jsonRewards = JsonSerializer.Serialize(oldRewards);
+            //var jsonQtable = JsonSerializer.Serialize(oldQTable);
+            //File.WriteAllText(@"C:\Users\84389\Documents\sdn\jsonRewards.json", jsonRewards);
+            //File.WriteAllText(@"C:\Users\84389\Documents\sdn\jsonQtable.json", jsonQtable);
+            #endregion
         }
 
         public Task StopAsync(CancellationToken stoppingToken)

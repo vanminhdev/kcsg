@@ -29,3 +29,5 @@ target/
 __pycache__/
 
 tmp/
+
+faucet/rwdata/tmp/

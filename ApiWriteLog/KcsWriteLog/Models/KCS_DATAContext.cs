@@ -131,6 +131,20 @@ namespace KcsWriteLog.Models
                 entity.Property(e => e.TimeRun).HasColumnType("datetime");
             });
 
+            modelBuilder.Entity<LogLatencyRead>(entity =>
+            {
+                entity.ToTable("LogLatencyRead");
+
+                entity.Property(e => e.TimeRun).HasColumnType("datetime");
+            });
+
+            modelBuilder.Entity<LogLatencyWrite>(entity =>
+            {
+                entity.ToTable("LogLatencyWrite");
+
+                entity.Property(e => e.TimeRun).HasColumnType("datetime");
+            });
+
             modelBuilder.Entity<LogQlearningRatio>(entity =>
             {
                 entity.ToTable("LogQLearningRatio");
