@@ -602,8 +602,6 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
     @SuppressWarnings(value = { "UPM_UNCALLED_PRIVATE_METHOD" })
     @SuppressFBWarnings(value = { "UPM_UNCALLED_PRIVATE_METHOD" })
     private JSONObject readDataTestPing() {
-        long timeRead = System.currentTimeMillis();
-
         //doc version tu server truoc
         JSONArray verFromServer = HandleCallServer.getVersionsFromServer();
         LOG.info(MSG, "version from server " + verFromServer);
@@ -669,7 +667,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
             int version = verFromServer.getJSONObject(i).getInt("version");
 
             long maxTime = 0;
-            int minSubVer = 0; //max hieu ver tu server va tu cac controller cho moi ip
+            int minSubVer = 9999; //max hieu ver tu server va tu cac controller cho moi ip
             for (int j = 0; j < allVersion.length(); j++) {
                 JSONObject currJson = allVersion.getJSONObject(j);
                 try {
@@ -703,10 +701,11 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
             avg = (float)sum / listVStaleness.size();
         }
 
+        long timeRead = System.currentTimeMillis();
         long tstaleness = 0;
         if (listTStaleness.size() > 0) {
-            long minTimeSet = Collections.min(listTStaleness);
-            tstaleness = timeRead - minTimeSet;
+            long maxTimeSet = Collections.min(listTStaleness);
+            tstaleness = timeRead - maxTimeSet;
         }
 
         logDetail.put("vStalenessMax", max);
