@@ -21,8 +21,10 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 
+import org.checkerframework.checker.units.qual.min;
 import org.eclipse.jdt.annotation.NonNull;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -333,7 +335,6 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         HandleCallServer.sendLogWrite(log);
     }
 
-
     @SuppressWarnings(value = { "DM_DEFAULT_ENCODING" })
     @SuppressFBWarnings(value = { "DM_DEFAULT_ENCODING" })
     private ResultWriteModel handleWrite(String srcIp, int srcVersion, InforControllerModel desCtrller) {
@@ -601,6 +602,8 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
     @SuppressWarnings(value = { "UPM_UNCALLED_PRIVATE_METHOD" })
     @SuppressFBWarnings(value = { "UPM_UNCALLED_PRIVATE_METHOD" })
     private JSONObject readDataTestPing() {
+        long timeRead = System.currentTimeMillis();
+
         //doc version tu server truoc
         JSONArray verFromServer = HandleCallServer.getVersionsFromServer();
         LOG.info(MSG, "version from server " + verFromServer);
@@ -621,7 +624,12 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
             if (getVer != null) {
                 allVersion.put(getVer);
             }
+            else {
+                LOG.error(MSG, "get ver test ping from " + dstController.getIp()
+                    + " type: " + dstController.getKindController());
+            }
         }
+        //them ver cua controller nay
         allVersion.put(new JSONObject(HandleVersion.getVersions()));
         LOG.info(MSG, "all version " + allVersion.toString());
 
@@ -635,12 +643,13 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
                 JSONObject currJson = allVersion.getJSONObject(j);
                 try {
                     //neu version tu r controller khac >= version tu server thi la dung
-                    if (currJson.getInt(ip) >= version) {
+                    JSONObject versionDetail = currJson.getJSONObject(ip);
+                    if (versionDetail.getInt("version") >= version) {
                         checkSuccess = true;
                         break;
                     }
                 } catch (JSONException e) {
-                    LOG.error(MSG, "error currJson");
+                    LOG.error(MSG, "error read version cua ip: " + ip);
                 }
             }
 
@@ -651,6 +660,60 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         }
         logDetail.put("end", java.time.LocalDateTime.now());
         logDetail.put("isVersionSuccess", checkAllSuccess);
+
+        ArrayList<Long> listTStaleness = new ArrayList<>();
+        ArrayList<Integer> listVStaleness = new ArrayList<>();
+        //tinh v staleness va tinh t staleness
+        for (int i = 0; i < verFromServer.length(); i++) {
+            String ip = verFromServer.getJSONObject(i).getString("ip");
+            int version = verFromServer.getJSONObject(i).getInt("version");
+
+            long maxTime = 0;
+            int maxSubVer = 0; //max hieu ver tu server va tu cac controller cho moi ip
+            for (int j = 0; j < allVersion.length(); j++) {
+                JSONObject currJson = allVersion.getJSONObject(j);
+                try {
+                    JSONObject versionDetail = currJson.getJSONObject(ip);
+                    int subVer = versionDetail.getInt("version") - version;
+                    if (subVer > maxSubVer) {
+                        maxSubVer = subVer;
+                    }
+                    long timeSet = versionDetail.getLong("timeSet");
+                    if (timeSet > maxTime) {
+                        maxTime = timeSet;
+                    }
+                } catch (JSONException e) {
+                    LOG.error(MSG, "error read version cua ip: " + ip);
+                }
+            }
+            listVStaleness.add(maxSubVer);
+            listTStaleness.add(maxTime);
+        }
+
+        int max = 0;
+        int min = 0;
+        float avg = 0;
+        if (listVStaleness.size() > 0) {
+            max = Collections.max(listVStaleness);
+            min = Collections.min(listVStaleness);
+            int sum = 0;
+            for (Integer mark : listVStaleness) {
+                sum += mark;
+            }
+            avg = (float)sum / listVStaleness.size();
+        }
+
+        long tstaleness = 0;
+        if (listTStaleness.size() > 0) {
+            long minTimeSet = Collections.min(listTStaleness);
+            tstaleness = timeRead - minTimeSet;
+        }
+
+        logDetail.put("vStalenessMax", max);
+        logDetail.put("vStalenessMin", min);
+        logDetail.put("vStalenessAvg", avg);
+
+        logDetail.put("tStaleness", tstaleness);
 
         LOG.info(MSG, logDetail);
         return logDetail;
