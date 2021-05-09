@@ -439,7 +439,7 @@ class Kcs:
             ver = ver_fr_server["version"]
 
             max_time = 0 #lay thoi gian cap nhat cuoi
-            min_subver = 0 #lay sai khac nho nhat
+            min_subver = 9999 #lay sai khac nho nhat
             for vers_in_all in all_version:
                 try:
                     detail_version = vers_in_all[ip]
