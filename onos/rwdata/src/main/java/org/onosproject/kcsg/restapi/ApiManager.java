@@ -156,7 +156,7 @@ public class ApiManager implements KcsgCommunicateApiService {
                 JSONObject currJson = allVersion.getJSONObject(j);
                 try {
                     JSONObject versionDetail = currJson.getJSONObject(ip);
-                    int subVer = versionDetail.getInt("version") - version;
+                    int subVer = version - versionDetail.getInt("version");
                     if (subVer > maxSubVer) {
                         maxSubVer = subVer;
                     }
