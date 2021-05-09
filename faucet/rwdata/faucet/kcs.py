@@ -174,7 +174,7 @@ class Kcs:
             with open(Kcs.file_path['version'], 'r') as f:
                 versions = json.load(f)
 
-        versions[ip] = version
+        versions[ip] = {"version": version, "timeSet": int(round(time.time() * 1000))}
         with open(Kcs.file_path['version'], 'w+') as outfile:
             json.dump(versions, outfile)
 
