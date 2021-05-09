@@ -17,5 +17,9 @@ namespace KcsWriteLog.Models
         public int Overhead { get; set; }
         public DateTime Time { get; set; }
         public DateTime? TimeUpdate { get; set; }
+        public long? VstalenessMax { get; set; }
+        public long? VstalenessMin { get; set; }
+        public double? VstalenessAvg { get; set; }
+        public long? TstalenessAvg { get; set; }
     }
 }
