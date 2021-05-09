@@ -10,6 +10,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace KcsWriteLog.Controllers
@@ -37,6 +38,65 @@ namespace KcsWriteLog.Controllers
                 return Ok(new { version = version.Ver });
             }
             return Ok(new { version = 0 });
+        }
+
+        [HttpGet]
+        [Route("get-versions-test")]
+        public async Task<IActionResult> GetVersionsTest()
+        {
+            var ips = _context.ControllerIps.Where(o => o.IsActive != null && o.IsActive.Value).Select(o => o.RemoteIp).ToList();
+            var versions = _context.VersionData.Where(o => ips.Contains(o.Ip)).Select(o => new { ip = o.Ip, version = o.Ver }).ToList();
+
+            var controllers = _context.ControllerIps.Where(o => o.IsActive != null && o.IsActive.Value).ToList();
+            _context.SaveChanges();
+
+            Dictionary<string, string> dic = new Dictionary<string, string>();
+            dic.Add("server", JsonSerializer.Serialize(versions));
+            HttpClient client = new HttpClient();
+            foreach (var ctrl in controllers)
+            {
+                if (ctrl.ControllerType == "ONOS")
+                {
+                    try
+                    {
+                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", "a2FyYWY6a2FyYWY=");
+                        var res = await client.GetAsync($"http://{ctrl.RemoteIp}:8181/onos/rwdata/communicate/get-versions");
+                        dic.Add(ctrl.RemoteIp, await res.Content.ReadAsStringAsync());
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.LogError(e.Message);
+                    }
+                }
+                else if (ctrl.ControllerType == "Faucet")
+                {
+                    try
+                    {
+                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", "a2FyYWY6a2FyYWY=");
+                        HttpResponseMessage res = await client.GetAsync($"http://{ctrl.RemoteIp}:8080/faucet/sina/versions/get-versions");
+                        dic.Add(ctrl.RemoteIp, await res.Content.ReadAsStringAsync());
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.LogError(e.Message);
+                    }
+                }
+                else if (ctrl.ControllerType == "ODL")
+                {
+                    try
+                    {
+                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", "YWRtaW46YWRtaW4=");
+                        HttpResponseMessage res = await client.PostAsync($"http://{ctrl.RemoteIp}:8181/restconf/operations/sina:getVersions",
+                            new StringContent("", Encoding.UTF8, "application/json"));
+                        dic.Add(ctrl.RemoteIp, await res.Content.ReadAsStringAsync());
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.LogError(e.Message);
+                    }
+                }
+            }
+            return Ok(dic);
         }
 
         [HttpGet]

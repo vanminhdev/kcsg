@@ -87,7 +87,7 @@ namespace QLearningProject.Problems
             {
                 for (int j = 0; j < NumberOfActions; j++)
                 {
-                    if (rewards[i][j] > 0)
+                    if (rewards[i][j] != 0)
                     {
                         sb.Append($"{i}: {rewards[i][0]} {rewards[i][1]} {rewards[i][2]} {rewards[i][3]} {rewards[i][4]} {rewards[i][5]}\n");
                         break;
