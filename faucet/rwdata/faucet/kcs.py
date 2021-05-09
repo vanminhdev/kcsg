@@ -422,7 +422,7 @@ class Kcs:
             ver = ver_fr_server["version"]
             for vers_in_all in all_version:
                 try:
-                    if vers_in_all[ip] == ver:
+                    if vers_in_all[ip] >= ver:
                         check_success = True
                         break
                 except:
