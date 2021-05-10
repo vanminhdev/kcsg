@@ -36,6 +36,7 @@ import org.json.JSONObject;
 
 import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.mdsal.binding.api.DataObjectModification;
+import org.opendaylight.mdsal.binding.api.DataObjectModification.ModificationType;
 import org.opendaylight.mdsal.binding.api.DataTreeChangeListener;
 import org.opendaylight.mdsal.binding.api.DataTreeIdentifier;
 import org.opendaylight.mdsal.binding.api.DataTreeModification;
@@ -134,24 +135,18 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
 
     private void onDataChanged(DataTreeModification<Node> change) {
         final DataObjectModification<Node> node = change.getRootNode();
-        switch (node.getModificationType()) {
-            case DELETE:
-                //LOG.info(MSG, "********************** Node Remove ***************");
-                //LOG.info(MSG, "NETCONF Node was removed: " + node.getIdentifier());
-                handleOnDataChanged();
-                break;
-            case SUBTREE_MODIFIED:
-                //LOG.info(MSG, "****************** Node Modify ***************");
-                //LOG.info(MSG, "NETCONF Node was updated: " + node.getIdentifier());
-                handleOnDataChanged();
-                break;
-            case WRITE:
-                //LOG.info(MSG, "********************* Node Add ************************");
-                //LOG.info(MSG, "NETCONF Node was created: " + node.getIdentifier());
-                handleOnDataChanged();
-                break;
-            default:
-                throw new IllegalStateException("Unhandled node change" + change);
+        if (node.getModificationType() == ModificationType.DELETE) {
+            //LOG.info(MSG, "********************** Node Remove ***************");
+            //LOG.info(MSG, "NETCONF Node was removed: " + node.getIdentifier());
+            handleOnDataChanged();
+        } else if (node.getModificationType() == ModificationType.SUBTREE_MODIFIED) {
+            LOG.info(MSG, "****************** Node Modify ***************");
+            LOG.info(MSG, "NETCONF Node was updated: " + node.getIdentifier());
+            handleOnDataChanged();
+        } else if (node.getModificationType() == ModificationType.WRITE) {
+            //LOG.info(MSG, "********************* Node Add ************************");
+            //LOG.info(MSG, "NETCONF Node was created: " + node.getIdentifier());
+            handleOnDataChanged();
         }
     }
 

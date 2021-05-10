@@ -64,7 +64,7 @@ public final class HandleVersion {
             bufferWriter = new BufferedWriter(outputStreamWriter);
             bufferWriter.write(jsonVersion.toString());
         } catch (IOException e) {
-            LOG.error(MSG, e.getMessage());
+            LOG.error(MSG, "create version file error");
         } finally {
             try {
                 if (bufferWriter != null) {
@@ -97,9 +97,9 @@ public final class HandleVersion {
                 return jsonDetail.getInt("version");
             }
         } catch (IOException e) {
-            LOG.error(MSG, e.getMessage());
+            LOG.error(MSG, "getVersion() read file version error: " + ip);
         } catch (JSONException e) {
-            LOG.error(MSG, e.getMessage());
+            LOG.error(MSG, "getVersion() version json error: " + ip);
         } finally {
             try {
                 if (buffReader != null) {
@@ -192,7 +192,7 @@ public final class HandleVersion {
             bufferWriter = new BufferedWriter(outputStreamWriter);
             bufferWriter.write(jsonVersion.toString());
         } catch (IOException e) {
-            LOG.error(MSG, e.getMessage());
+            LOG.error(MSG, "setVersion() read file version error: " + ip);
         } finally {
             try {
                 if (bufferWriter != null) {
