@@ -178,11 +178,11 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
             JSONObject result = new JSONObject(nodeLinkDowns);
             String newNodeState = result.toString();
             if (nodeState != null && !nodeState.equals(newNodeState)) {
-                LOG.info(MSG,"old: " + nodeState);
-                LOG.info(MSG,"new: " + newNodeState);
+                //LOG.info(MSG,"old: " + nodeState);
+                //LOG.info(MSG,"new: " + newNodeState);
                 writeLogChange();
+		nodeState = result.toString();
             }
-            nodeState = result.toString();
         } catch (UnirestException e) {
             LOG.error(MSG, e.getMessage());
         } catch (JSONException e) {
