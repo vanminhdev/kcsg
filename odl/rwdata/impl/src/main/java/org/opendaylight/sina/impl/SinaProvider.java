@@ -14,9 +14,13 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -88,10 +92,6 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
 
     public static final String INIT_PATH = "/home/onos/sdn";
 
-    @SuppressWarnings(value = { "MS_PKGPROTECT", "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD" })
-    @SuppressFBWarnings(value = { "MS_PKGPROTECT", "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD" })
-    private static String nodeState = null;
-
     final InstanceIdentifier<Node> instanceIdentifier = InstanceIdentifier.builder(Nodes.class).child(Node.class)
             .build();
 
@@ -155,6 +155,65 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         }
     }
 
+    private void writeNodeState(String str) {
+        String path = INIT_PATH;
+        OutputStreamWriter outputStreamWriter = null;
+        BufferedWriter bufferWriter = null;
+        try {
+            outputStreamWriter = new OutputStreamWriter(
+                new FileOutputStream(path + "/nodeState.txt", false),
+                StandardCharsets.UTF_8
+            );
+            bufferWriter = new BufferedWriter(outputStreamWriter);
+            bufferWriter.write(str);
+        } catch (IOException e) {
+            LOG.error(MSG, "write node state error");
+        } finally {
+            try {
+                if (bufferWriter != null) {
+                    bufferWriter.close();
+                }
+                if (outputStreamWriter != null) {
+                    outputStreamWriter.close();
+                }
+            } catch (IOException e) {
+                LOG.error(MSG, e.getMessage());
+            }
+        }
+    }
+
+    private String readNodeState() {
+        String path = INIT_PATH;
+        String str = "";
+        InputStreamReader inputStreamReader = null;
+        BufferedReader buffReader = null;
+        try {
+            inputStreamReader = new InputStreamReader(
+                new FileInputStream(path + "/nodeState.txt"), StandardCharsets.UTF_8
+            );
+            buffReader = new BufferedReader(inputStreamReader);
+            String line;
+
+            while ((line = buffReader.readLine()) != null) {
+                return line;
+            }
+        } catch (IOException e) {
+            LOG.error(MSG, "read node state error");
+        } finally {
+            try {
+                if (buffReader != null) {
+                    buffReader.close();
+                }
+                if (inputStreamReader != null) {
+                    inputStreamReader.close();
+                }
+            } catch (IOException e) {
+                LOG.error(MSG, e.getMessage());
+            }
+        }
+        return str;
+    }
+
     private void handleOnDataChanged() {
         HashMap<String, Boolean> nodeLinkDowns = new HashMap<>();
         try {
@@ -177,11 +236,12 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
             }
             JSONObject result = new JSONObject(nodeLinkDowns);
             String newNodeState = result.toString();
+            String nodeState = readNodeState();
             if (nodeState != null && !nodeState.equals(newNodeState)) {
-                //LOG.info(MSG,"old: " + nodeState);
-                //LOG.info(MSG,"new: " + newNodeState);
+                LOG.info(MSG,"old: " + nodeState);
+                LOG.info(MSG,"new: " + newNodeState);
                 writeLogChange();
-                nodeState = result.toString();
+                writeNodeState(result.toString());
             }
         } catch (UnirestException e) {
             LOG.error(MSG, e.getMessage());
