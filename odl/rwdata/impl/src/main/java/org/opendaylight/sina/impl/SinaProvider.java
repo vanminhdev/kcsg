@@ -142,7 +142,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         } else if (node.getModificationType() == ModificationType.SUBTREE_MODIFIED) {
             LOG.info(MSG, "****************** Node Modify ***************");
             LOG.info(MSG, "NETCONF Node was updated: " + node.getIdentifier());
-            //handleOnDataChanged();
+            handleOnDataChanged();
         } else if (node.getModificationType() == ModificationType.WRITE) {
             //LOG.info(MSG, "********************* Node Add ************************");
             //LOG.info(MSG, "NETCONF Node was created: " + node.getIdentifier());
@@ -212,12 +212,12 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
     private void handleOnDataChanged() {
         HashMap<String, Boolean> nodeLinkDowns = new HashMap<>();
         try {
-            Unirest.setTimeouts(0, 0);
             String url = "http://localhost:8181/restconf/operational/opendaylight-inventory:nodes";
             HttpResponse<String> response;
             response = Unirest.get(url).header("Accept", "application/json")
                     .header("Authorization", "Basic YWRtaW46YWRtaW4=").asString();
             JSONObject root = new JSONObject(response.getBody());
+            LOG.info(MSG,"len: " + response.getBody().getBytes(StandardCharsets.UTF_8).length);
             JSONArray nodes = (root.getJSONObject("nodes")).getJSONArray("node");
             for (int i = 0; i < nodes.length(); i++) {
                 JSONArray nodeConnector = nodes.getJSONObject(i).getJSONArray("node-connector");
