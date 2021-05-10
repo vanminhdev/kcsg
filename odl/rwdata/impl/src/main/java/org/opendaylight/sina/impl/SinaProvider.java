@@ -181,7 +181,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
                 //LOG.info(MSG,"old: " + nodeState);
                 //LOG.info(MSG,"new: " + newNodeState);
                 writeLogChange();
-		nodeState = result.toString();
+                nodeState = result.toString();
             }
         } catch (UnirestException e) {
             LOG.error(MSG, e.getMessage());
