@@ -186,7 +186,7 @@ public class ApiManager implements KcsgCommunicateApiService {
         long timeRead = System.currentTimeMillis();
         long tstaleness = 0;
         if (listTStaleness.size() > 0) {
-            long maxTimeSet = Collections.min(listTStaleness);
+            long maxTimeSet = Collections.max(listTStaleness);
             tstaleness = timeRead - maxTimeSet;
         }
 
