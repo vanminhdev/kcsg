@@ -125,7 +125,7 @@ namespace QLearningProject.MachineLearning
         }
 
         /// <summary>
-        /// Bắt đầu training bằng cách khơi tạo init sate bằng cách random state trong tập state đã biết
+        /// Bắt đầu training, khơi tạo init sate bằng cách random state trong tập state đã biết
         /// sau đó tính q value
         /// </summary>
         /// <param name="numberOfIterations"></param>
@@ -136,7 +136,7 @@ namespace QLearningProject.MachineLearning
                 //lấy init state là một random trong các state đã từng có trong quá khứ
                 int initialState = RandomInitialState();
                 //tính value cho q table
-                InitializeEpisode(initialState);
+                CaculateQTable(initialState);
             }
         }
 
@@ -290,7 +290,7 @@ namespace QLearningProject.MachineLearning
         /// Tính value cho q table
         /// </summary>
         /// <param name="initialState">trạng thái khởi tạo</param>
-        private void InitializeEpisode(int initialState)
+        private void CaculateQTable(int initialState)
         {
             int currentState = initialState;
             for (int i = 0; i < 6; i++)
@@ -335,7 +335,7 @@ namespace QLearningProject.MachineLearning
         }
 
         /// <summary>
-        /// Random ra state để train
+        /// Random ra state để train, danh sách state là những state đã từng xảy ra trong quá khứ
         /// </summary>
         /// <param name="numberOfStates">Số state</param>
         /// <returns></returns>
@@ -347,7 +347,7 @@ namespace QLearningProject.MachineLearning
                 var state = _logState[index];
                 return _qLearningProblem.GetState(state.l1, state.l2, state.NOE);
             }
-            return _random.Next(0, _qLearningProblem.NumberOfStates);
+            return 0;
         }
 
         /// <summary>

@@ -36,10 +36,10 @@ namespace QLearningProject.Run
         /// <param name="nPull"></param>
         /// <returns></returns>
         public RWValue Run(int r, int w, int N, int l1, int l2, int NOE, int numSuccess, int numRequest, double[][] oldRewards, double[][] oldQTable,
-            LogState[] logState, int t, Dictionary<StateAndAction, int> nPull, bool violateRead, bool violateWrite)
+            List<LogState> logState, int t, Dictionary<StateAndAction, int> nPull, bool violateRead, bool violateWrite)
         {
             LogState lastState = null;
-            if (logState.Length > 0)
+            if (logState.Count > 0)
             {
                 lastState = logState[^1];
             }
@@ -82,6 +82,15 @@ namespace QLearningProject.Run
                 #endregion
             }
 
+            //chèn thêm state mới vào log state
+            logState.Add(new LogState
+            {
+                l1 = l1,
+                l2 = l2,
+                NOE = NOE,
+                action = -1 //chưa gán action sau khi run mới có action
+            });
+
             //show reward trước train và q value
             _loggerQlearningRun.LogInformation($"Reward:\n{problem.ShowReward()}");
             //_loggerQlearningRun.LogInformation($"QTable:\n{qLearning.ShowQTable()}");
@@ -97,11 +106,11 @@ namespace QLearningProject.Run
                 {
                     newAction = 5;
                 }
-
                 if (violateWrite)
                 {
                     newAction = 4;
                 }
+                logState[^1].action = newAction; //gán action lựa chọn là gì
 
                 _loggerQlearningRun.LogInformation($"from state {initialState} new action: {newAction}");
                 int newR = r;

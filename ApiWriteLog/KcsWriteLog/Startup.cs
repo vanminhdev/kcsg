@@ -51,7 +51,7 @@ namespace KcsWriteLog
             //services.AddHostedService<TimerNotQLearning>();
             services.AddHostedService<TimerQLearning>();
             //services.AddHostedService<TimerQLearningVegas>();
-            //services.AddHostedService<TimerTestPing>();
+            services.AddHostedService<TimerTestPing>();
 
             services.AddControllers();
         }
