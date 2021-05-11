@@ -23,10 +23,10 @@ namespace QLearningProject.Run
         /// </summary>
         /// <returns></returns>
         public RWValueVegas Run(int r, int w, int N, int l1, int l2, int NOE, int numSuccess, int numRequest, double[][] oldRewards, double[][] oldQTable,
-            LogState[] logState, Queue<double> logCSC, bool violateRead, bool violateWrite)
+            List<LogState> logState, Queue<double> logCSC, bool violateRead, bool violateWrite)
         {
             LogState lastState = null;
-            if (logState.Length > 0)
+            if (logState.Count > 0)
             {
                 lastState = logState[^1];
             }
@@ -61,6 +61,15 @@ namespace QLearningProject.Run
                 problem.rewards[state][action] = newReward;
             }
 
+            //chèn thêm state mới vào log state
+            logState.Add(new LogState
+            {
+                l1 = l1,
+                l2 = l2,
+                NOE = NOE,
+                action = -1 //chưa gán action sau khi run mới có action
+            });
+
             //show reward và q value
             _loggerQlearningRun.LogInformation($"Reward:\n{problem.ShowReward()}");
             //_loggerQlearningRun.LogInformation($"QTable:\n{qLearning.ShowQTable()}");
@@ -76,11 +85,11 @@ namespace QLearningProject.Run
                 {
                     newAction = 5;
                 }
-
                 if (violateWrite)
                 {
                     newAction = 4;
                 }
+                logState[^1].action = newAction; //gán action lựa chọn là gì
 
                 _loggerQlearningRun.LogInformation($"from state {initialState} new action: {newAction}");
                 int newR = r;

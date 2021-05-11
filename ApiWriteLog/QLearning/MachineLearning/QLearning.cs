@@ -60,7 +60,7 @@ namespace QLearningProject.MachineLearning
 
 
         private IQLearningProblem _qLearningProblem;
-        private LogState[] _logState;
+        private List<LogState> _logState;
 
         private int numSuccessForAction;
         private int numRequestForAction;
@@ -82,7 +82,7 @@ namespace QLearningProject.MachineLearning
         /// <param name="nPull"></param>
         public QLearning(ILogger<QLearning> loggerQlearning, double gamma, double epsilon, double alpha, IQLearningProblem qLearningProblem,
             int numSuccessForAction, int numRequestForAction,
-            double[][] oldQTable, LogState[] logState, int t, Dictionary<StateAndAction, int> nPull)
+            double[][] oldQTable, List<LogState> logState, int t, Dictionary<StateAndAction, int> nPull)
         {
             _loggerQlearning = loggerQlearning;
             _qLearningProblem = qLearningProblem;
@@ -335,15 +335,15 @@ namespace QLearningProject.MachineLearning
         }
 
         /// <summary>
-        /// Random ra state để train, danh sách state là những state đã từng xảy ra trong quá khứ
+        /// Random ra state để train, danh sách state là những state đã từng xảy ra trong quá khứ + 1 state vừa xảy ra
         /// </summary>
         /// <param name="numberOfStates">Số state</param>
         /// <returns></returns>
         private int RandomInitialState()
         {
-            if (_logState.Length > 0)
+            if (_logState.Count > 0)
             {
-                int index = _random.Next(0, _logState.Length);
+                int index = _random.Next(0, _logState.Count);
                 var state = _logState[index];
                 return _qLearningProblem.GetState(state.l1, state.l2, state.NOE);
             }

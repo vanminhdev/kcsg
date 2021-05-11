@@ -42,7 +42,7 @@ namespace KcsWriteLog.Services.HostedService
         {
             _loggerQlearningRun.LogInformation("Timed QLearning Hosted Service running.");
             _timer = new Timer(DoWork, null, TimeSpan.Zero,
-                TimeSpan.FromSeconds(120));
+                TimeSpan.FromSeconds(10));
             #region load qtable from db
             //if (File.Exists(@"C:\Users\84389\Documents\sdn\jsonRewards.json") && File.Exists(@"C:\Users\84389\Documents\sdn\jsonQtable.json"))
             //{
@@ -100,7 +100,7 @@ namespace KcsWriteLog.Services.HostedService
             }
 
             #region latency
-            double thresholdRead = 0;
+            double thresholdRead = 8;
             double thresholdWrite = 85;
 
             bool violateRead = false;
@@ -195,10 +195,10 @@ namespace KcsWriteLog.Services.HostedService
             _context.SaveChanges();
 
             #region save q table to text
-            var jsonRewards = JsonSerializer.Serialize(oldRewards);
-            var jsonQtable = JsonSerializer.Serialize(oldQTable);
-            File.WriteAllText(@"C:\Users\84389\Documents\sdn\jsonRewards.json", jsonRewards);
-            File.WriteAllText(@"C:\Users\84389\Documents\sdn\jsonQtable.json", jsonQtable);
+            //var jsonRewards = JsonSerializer.Serialize(oldRewards);
+            //var jsonQtable = JsonSerializer.Serialize(oldQTable);
+            //File.WriteAllText(@"C:\Users\84389\Documents\sdn\jsonRewards.json", jsonRewards);
+            //File.WriteAllText(@"C:\Users\84389\Documents\sdn\jsonQtable.json", jsonQtable);
             #endregion
         }
 

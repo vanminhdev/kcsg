@@ -24,7 +24,7 @@ namespace QLearningProject.MachineLearning
         public double[][] QTable { get => _qTable; }
 
         private IQLearningProblem _qLearningProblem;
-        private LogState[] _logState;
+        private List<LogState> _logState;
 
         private Queue<double> _logCSC;
 
@@ -39,7 +39,7 @@ namespace QLearningProject.MachineLearning
         /// </summary>
         public QLearningVegas(ILogger<QLearningVegas> loggerQlearning, double gamma, double epsilon, double alpha, IQLearningProblem qLearningProblem,
             int numSuccessForAction, int numRequestForAction,
-            double[][] oldQTable, LogState[] logState, Queue<double> logCSC, int numCtrl)
+            double[][] oldQTable, List<LogState> logState, Queue<double> logCSC, int numCtrl)
         {
             _loggerQlearning = loggerQlearning;
             _qLearningProblem = qLearningProblem;
@@ -174,19 +174,19 @@ namespace QLearningProject.MachineLearning
         }
 
         /// <summary>
-        /// Random ra state để train
+        /// Random ra state để train, danh sách state là những state đã từng xảy ra trong quá khứ + 1 state vừa xảy ra
         /// </summary>
         /// <param name="numberOfStates">Số state</param>
         /// <returns></returns>
         private int RandomInitialState()
         {
-            if (_logState.Length > 0)
+            if (_logState.Count > 0)
             {
-                int index = _random.Next(0, _logState.Length);
+                int index = _random.Next(0, _logState.Count);
                 var state = _logState[index];
                 return _qLearningProblem.GetState(state.l1, state.l2, state.NOE);
             }
-            return _random.Next(0, _qLearningProblem.NumberOfStates);
+            return 0;
         }
 
         /// <summary>

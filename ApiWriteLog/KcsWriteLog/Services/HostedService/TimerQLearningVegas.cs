@@ -23,17 +23,6 @@ namespace KcsWriteLog.Services.HostedService
         private Timer _timer;
         private QLearningVegasRun _qLearning;
 
-        /// <summary>
-        /// số lần đọc đúng
-        /// </summary>
-        private int oldNumSuccess = 0;
-        /// <summary>
-        /// số lần request đọc
-        /// </summary>
-        private int oldNumRequest = 0;
-        private int newNumSuccess = 0;
-        private int newNumRequest = 0;
-
         private double[][] oldRewards;
         private double[][] oldQTable;
 
@@ -54,19 +43,19 @@ namespace KcsWriteLog.Services.HostedService
             _timer = new Timer(DoWork, null, TimeSpan.Zero,
                 TimeSpan.FromSeconds(10));
             #region load qtable from db
-            string rewardPath = @"C:\Users\84389\Documents\sdn\jsonRewardsVegas.json";
-            string qTablePath = @"C:\Users\84389\Documents\sdn\jsonQtableVegas.json";
-            if (File.Exists(rewardPath) && File.Exists(qTablePath))
-            {
-                string jsonRewards = File.ReadAllText(rewardPath);
-                string jsonQtable = File.ReadAllText(qTablePath);
-                oldRewards = JsonSerializer.Deserialize<double[][]>(jsonRewards);
-                oldQTable = JsonSerializer.Deserialize<double[][]>(jsonQtable);
-            }
-            else
-            {
-                _loggerQlearningRun.LogWarning("DB not have Qtable");
-            }
+            //string rewardPath = @"C:\Users\84389\Documents\sdn\jsonRewardsVegas.json";
+            //string qTablePath = @"C:\Users\84389\Documents\sdn\jsonQtableVegas.json";
+            //if (File.Exists(rewardPath) && File.Exists(qTablePath))
+            //{
+            //    string jsonRewards = File.ReadAllText(rewardPath);
+            //    string jsonQtable = File.ReadAllText(qTablePath);
+            //    oldRewards = JsonSerializer.Deserialize<double[][]>(jsonRewards);
+            //    oldQTable = JsonSerializer.Deserialize<double[][]>(jsonQtable);
+            //}
+            //else
+            //{
+            //    _loggerQlearningRun.LogWarning("DB not have Qtable");
+            //}
             #endregion
             return Task.CompletedTask;
         }
@@ -157,7 +146,7 @@ namespace KcsWriteLog.Services.HostedService
             int N = _context.ControllerIps.Where(o => o.IsActive != null && o.IsActive.Value).Count(); //số controller
             #endregion
             var newValue = _qLearning.Run(rwConfig.R, rwConfig.W, N, l1, l2, NOE, numSuccess, numRequest,
-                oldRewards, oldQTable, _logState.ToArray(), _logCSC, violateRead, violateWrite);
+                oldRewards, oldQTable, _logState, _logCSC, violateRead, violateWrite);
 
             oldRewards = newValue.rewards;
             oldQTable = newValue.qTable;
@@ -203,23 +192,15 @@ namespace KcsWriteLog.Services.HostedService
                 Time = DateTime.Now
             });
 
-            _logState.Add(new LogState
-            {
-                l1 = l1,
-                l2 = l2,
-                NOE = NOE,
-                action = newValue.Action
-            });
-
             _loggerQlearningRun.LogInformation($"new R: {newValue.R}, W: {newValue.W}");
             _loggerQlearningRun.LogInformation("==========================================================================================================================");
             _context.SaveChanges();
 
             #region save q table to text
-            var jsonRewards = JsonSerializer.Serialize(oldRewards);
-            var jsonQtable = JsonSerializer.Serialize(oldQTable);
-            File.WriteAllText(@"C:\Users\84389\Documents\sdn\jsonRewardsVegas.json", jsonRewards);
-            File.WriteAllText(@"C:\Users\84389\Documents\sdn\jsonQtableVegas.json", jsonQtable);
+            //var jsonRewards = JsonSerializer.Serialize(oldRewards);
+            //var jsonQtable = JsonSerializer.Serialize(oldQTable);
+            //File.WriteAllText(@"C:\Users\84389\Documents\sdn\jsonRewardsVegas.json", jsonRewards);
+            //File.WriteAllText(@"C:\Users\84389\Documents\sdn\jsonQtableVegas.json", jsonQtable);
             #endregion
         }
 
