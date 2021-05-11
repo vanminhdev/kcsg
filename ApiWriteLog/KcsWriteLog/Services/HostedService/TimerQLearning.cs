@@ -44,17 +44,17 @@ namespace KcsWriteLog.Services.HostedService
             _timer = new Timer(DoWork, null, TimeSpan.Zero,
                 TimeSpan.FromSeconds(10));
             #region load qtable from db
-            if (File.Exists(@"C:\Users\84389\Documents\sdn\jsonRewards.json") && File.Exists(@"C:\Users\84389\Documents\sdn\jsonQtable.json"))
-            {
-                string jsonRewards = File.ReadAllText(@"C:\Users\84389\Documents\sdn\jsonRewards.json");
-                string jsonQtable = File.ReadAllText(@"C:\Users\84389\Documents\sdn\jsonRewards.json");
-                oldRewards = JsonSerializer.Deserialize<double[][]>(jsonRewards);
-                oldQTable = JsonSerializer.Deserialize<double[][]>(jsonQtable);
-            }
-            else
-            {
-                _loggerQlearningRun.LogWarning("DB not have Qtable");
-            }
+            //if (File.Exists(@"C:\Users\84389\Documents\sdn\jsonRewards.json") && File.Exists(@"C:\Users\84389\Documents\sdn\jsonQtable.json"))
+            //{
+            //    string jsonRewards = File.ReadAllText(@"C:\Users\84389\Documents\sdn\jsonRewards.json");
+            //    string jsonQtable = File.ReadAllText(@"C:\Users\84389\Documents\sdn\jsonRewards.json");
+            //    oldRewards = JsonSerializer.Deserialize<double[][]>(jsonRewards);
+            //    oldQTable = JsonSerializer.Deserialize<double[][]>(jsonQtable);
+            //}
+            //else
+            //{
+            //    _loggerQlearningRun.LogWarning("DB not have Qtable");
+            //}
             #endregion
             return Task.CompletedTask;
         }

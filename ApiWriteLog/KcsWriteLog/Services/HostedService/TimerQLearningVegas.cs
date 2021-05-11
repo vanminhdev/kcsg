@@ -54,10 +54,12 @@ namespace KcsWriteLog.Services.HostedService
             _timer = new Timer(DoWork, null, TimeSpan.Zero,
                 TimeSpan.FromSeconds(10));
             #region load qtable from db
-            if (File.Exists(@"C:\Users\84389\Documents\sdn\jsonRewards.json") && File.Exists(@"C:\Users\84389\Documents\sdn\jsonQtable.json"))
+            string rewardPath = @"C:\Users\84389\Documents\sdn\jsonRewardsVegas.json";
+            string qTablePath = @"C:\Users\84389\Documents\sdn\jsonQtableVegas.json";
+            if (File.Exists(rewardPath) && File.Exists(qTablePath))
             {
-                string jsonRewards = File.ReadAllText(@"C:\Users\84389\Documents\sdn\jsonRewards.json");
-                string jsonQtable = File.ReadAllText(@"C:\Users\84389\Documents\sdn\jsonRewards.json");
+                string jsonRewards = File.ReadAllText(rewardPath);
+                string jsonQtable = File.ReadAllText(qTablePath);
                 oldRewards = JsonSerializer.Deserialize<double[][]>(jsonRewards);
                 oldQTable = JsonSerializer.Deserialize<double[][]>(jsonQtable);
             }
@@ -66,7 +68,6 @@ namespace KcsWriteLog.Services.HostedService
                 _loggerQlearningRun.LogWarning("DB not have Qtable");
             }
             #endregion
-
             return Task.CompletedTask;
         }
 
@@ -94,35 +95,22 @@ namespace KcsWriteLog.Services.HostedService
                 return;
             }
 
+           #region num success / num request, l1 l2 NOE
             //range: 10s trước ->  hiện tại
             //Client metric là log read
             //Stale metric là log write
             var rangeEnd = DateTime.Now;
             var rangeStart = rangeEnd.AddSeconds(-10);
             var logRead = _context.DataTrainings.Where(o => o.Time >= rangeStart && o.Time <= rangeEnd && o.ClientMetric != TimeSpan.Zero).ToList();
+            var logWrite = _context.DataTrainings.Where(o => o.Time >= rangeStart && o.Time <= rangeEnd && o.StaleMetric != TimeSpan.Zero).ToList();
 
-            oldNumSuccess = newNumSuccess;
-            oldNumRequest = newNumRequest;
-
-            newNumSuccess += logRead.Where(o => o.IsVersionSuccess).Count();
-            newNumRequest += logRead.Count();
-
-            var rangeStartForAction = rangeEnd.AddSeconds(-10);
-            var logReadForAction = _context.DataTrainings.Where(o => o.Time >= rangeStartForAction && o.Time <= rangeEnd && o.ClientMetric != TimeSpan.Zero).ToList();
             //để tính r/R
-            var numSuccessForAction = logReadForAction.Where(o => o.IsVersionSuccess).Count();
-            var numRequestForAction = logReadForAction.Count();
+            var numSuccess = logRead.Where(o => o.IsVersionSuccess).Count();
+            var numRequest = logRead.Count();
 
-            //request read hợp lệ
-            var rangeStartForState = rangeEnd.AddSeconds(-10);
-            var logReadForState = _context.DataTrainings.Where(o => o.Time >= rangeStartForState && o.Time <= rangeEnd
-                && o.ClientMetric != TimeSpan.Zero && o.ClientMetric <= TimeSpan.FromMilliseconds(100)).ToList();
-            var logWriteForState = _context.DataTrainings.Where(o => o.Time >= rangeStartForState && o.Time <= rangeEnd
-                && o.StaleMetric != TimeSpan.Zero && o.StaleMetric <= TimeSpan.FromMilliseconds(100)).ToList();
-
-            _loggerQlearningRun.LogInformation($"request read: old {oldNumSuccess}/{oldNumRequest}  new {newNumSuccess}/{newNumRequest}");
+            _loggerQlearningRun.LogInformation($"request read: {numRequest}");
             //nếu chưa có request hoặc không có request mới thì không chạy
-            if (newNumRequest - oldNumRequest == 0)
+            if (numRequest == 0)
             {
                 _loggerQlearningRun.LogInformation("==========================================================================================================================");
                 return;
@@ -130,51 +118,46 @@ namespace KcsWriteLog.Services.HostedService
 
             #region latency
             double thresholdRead = 8;
-            double thresholdWrite = 86;
+            double thresholdWrite = 85;
 
             bool violateRead = false;
             bool violateWrite = false;
             TimeSpan LatencyReadAvg = TimeSpan.FromMilliseconds(0);
             TimeSpan LatencyWriteAvg = TimeSpan.FromMilliseconds(0);
-            if (logReadForState.Count > 0)
+            if (logRead.Count > 0)
             {
-                LatencyReadAvg = TimeSpan.FromMilliseconds(logReadForState.Average(o => o.ClientMetric.TotalMilliseconds));
+                LatencyReadAvg = TimeSpan.FromMilliseconds(logRead.Average(o => o.ClientMetric.TotalMilliseconds));
                 violateRead = LatencyReadAvg > TimeSpan.FromMilliseconds(thresholdRead);
             }
 
-            if (logWriteForState.Count > 0)
+            if (logWrite.Count > 0)
             {
-                LatencyWriteAvg = TimeSpan.FromMilliseconds(logWriteForState.Average(o => o.StaleMetric.TotalMilliseconds));
+                LatencyWriteAvg = TimeSpan.FromMilliseconds(logWrite.Average(o => o.StaleMetric.TotalMilliseconds));
                 violateWrite = LatencyWriteAvg > TimeSpan.FromMilliseconds(thresholdWrite);
             }
             #endregion
 
-            int l1 = 0;
-            if (logWriteForState.Count() > 0)
+            int l1 = 0; //trung bình 1 thay đổi được cập nhật
+            if (logWrite.Count() > 0)
             {
-                var sum = logWriteForState.Sum(o => o.StaleMetric.TotalMilliseconds);
-                l1 = (int)(sum / logWriteForState.Count()); //trung bình 1 thay đổi được cập nhật
+                var sum = logWrite.Sum(o => o.StaleMetric.TotalMilliseconds);
+                l1 = (int)(sum / logWrite.Count()); //trung bình 1 thay đổi được cập nhật
             }
 
-            int l2 = 0;
-            if (logReadForState.Count() > 0)
+            int l2 = 0; //trung bình 1 request nhận được
+            if (logRead.Count() > 0)
             {
-                var sum = logReadForState.Sum(o => o.ClientMetric.TotalMilliseconds);
-                l2 = (int)(sum / logReadForState.Count()); //trung bình 1 request nhận được
+                var sum = logRead.Sum(o => o.ClientMetric.TotalMilliseconds);
+                l2 = (int)(sum / logRead.Count()); //trung bình 1 request nhận được
             }
 
-            //l1 = l2 + 10; //để test
-            int NOE = (int)(logReadForState.Count(o => !o.IsVersionSuccess) / (double)logReadForState.Count()); //số lần đọc lỗi
-            if (NOE < 0)
-            {
-                NOE = 0;
-            }
+            int NOE = logRead.Count(o => !o.IsVersionSuccess); //số lần đọc lỗi
 
             _loggerQlearningRun.LogInformation($"l1, l2, NOE = {l1}, {l2}, {NOE}");
             int N = _context.ControllerIps.Where(o => o.IsActive != null && o.IsActive.Value).Count(); //số controller
-
-            var newValue = _qLearning.Run(rwConfig.R, rwConfig.W, N, oldNumSuccess, oldNumRequest, newNumSuccess, newNumRequest,
-                l1, l2, NOE, numSuccessForAction, numRequestForAction, oldRewards, oldQTable, _logState.ToArray(), _logCSC, violateRead, violateWrite);
+            #endregion
+            var newValue = _qLearning.Run(rwConfig.R, rwConfig.W, N, l1, l2, NOE, numSuccess, numRequest,
+                oldRewards, oldQTable, _logState.ToArray(), _logCSC, violateRead, violateWrite);
 
             oldRewards = newValue.rewards;
             oldQTable = newValue.qTable;
@@ -184,19 +167,19 @@ namespace KcsWriteLog.Services.HostedService
 
             _context.LogQlearningReads.Add(new LogQlearningRead
             {
-                NumViolations = logReadForState.Where(o => o.ClientMetric > TimeSpan.FromMilliseconds(thresholdRead)).Count(),
+                NumViolations = logRead.Where(o => o.ClientMetric > TimeSpan.FromMilliseconds(thresholdRead)).Count(),
                 TimeRun = timeRun
             });
 
             _context.LogQlearningWrites.Add(new LogQlearningWrite
             {
-                NumViolations = logWriteForState.Where(o => o.StaleMetric > TimeSpan.FromMilliseconds(thresholdWrite)).Count(),
+                NumViolations = logWrite.Where(o => o.StaleMetric > TimeSpan.FromMilliseconds(thresholdWrite)).Count(),
                 TimeRun = timeRun
             });
 
             _context.LogQlearningRatios.Add(new LogQlearningRatio
             {
-                Ratio = numSuccessForAction / (double)numRequestForAction,
+                Ratio = numSuccess / (double)numRequest,
                 TimeRun = timeRun
             });
 
@@ -233,10 +216,10 @@ namespace KcsWriteLog.Services.HostedService
             _context.SaveChanges();
 
             #region save q table to text
-            //var jsonRewards = JsonSerializer.Serialize(oldRewards);
-            //var jsonQtable = JsonSerializer.Serialize(oldQTable);
-            //File.WriteAllText(@"C:\Users\84389\Documents\sdn\jsonRewards.json", jsonRewards);
-            //File.WriteAllText(@"C:\Users\84389\Documents\sdn\jsonQtable.json", jsonQtable);
+            var jsonRewards = JsonSerializer.Serialize(oldRewards);
+            var jsonQtable = JsonSerializer.Serialize(oldQTable);
+            File.WriteAllText(@"C:\Users\84389\Documents\sdn\jsonRewardsVegas.json", jsonRewards);
+            File.WriteAllText(@"C:\Users\84389\Documents\sdn\jsonQtableVegas.json", jsonQtable);
             #endregion
         }
 
