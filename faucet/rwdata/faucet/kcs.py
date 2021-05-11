@@ -174,7 +174,7 @@ class Kcs:
             with open(Kcs.file_path['version'], 'r') as f:
                 versions = json.load(f)
 
-        versions[ip] = version
+        versions[ip] = {"version": version, "timeSet": int(round(time.time() * 1000))}
         with open(Kcs.file_path['version'], 'w+') as outfile:
             json.dump(versions, outfile)
 
@@ -439,7 +439,7 @@ class Kcs:
             ver = ver_fr_server["version"]
 
             max_time = 0 #lay thoi gian cap nhat cuoi
-            min_subver = 0 #lay sai khac nho nhat
+            min_subver = 9999 #lay sai khac nho nhat
             for vers_in_all in all_version:
                 try:
                     detail_version = vers_in_all[ip]
@@ -469,7 +469,7 @@ class Kcs:
         time_read = int(round(time.time() * 1000))
         tstaleness = 0
         if len(list_tstaleness) > 0:
-            tstaleness = time_read - min(list_tstaleness)
+            tstaleness = time_read - max(list_tstaleness)
         log_detail["tStaleness"] = tstaleness
         return log_detail
 
