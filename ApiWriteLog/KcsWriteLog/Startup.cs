@@ -49,9 +49,9 @@ namespace KcsWriteLog
             services.AddScoped<IRemoteIpService, RemoteIpService>();
 
             //services.AddHostedService<TimerNotQLearning>();
-            services.AddHostedService<TimerQLearning>();
-            //services.AddHostedService<TimerQLearningVegas>();
-            services.AddHostedService<TimerTestPing>();
+            //services.AddHostedService<TimerQLearning>();
+            services.AddHostedService<TimerQLearningVegas>();
+            //services.AddHostedService<TimerTestPing>();
 
             services.AddControllers();
         }

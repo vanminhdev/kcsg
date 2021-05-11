@@ -131,10 +131,14 @@ namespace KcsWriteLog.Controllers
                         StringContent content = new StringContent("", Encoding.UTF8, "application/json");
                         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", "a2FyYWY6a2FyYWY=");
                         HttpResponseMessage res = await client.PutAsync($"http://{ctrl.RemoteIp}:8181/onos/rwdata/communicate/reset-versions", content);
+                        if (!res.IsSuccessStatusCode)
+                        {
+                            _logger.LogWarning($"reset version fail from ip: {ctrl.RemoteIp} status code: {res.StatusCode}");
+                        }
                     }
                     catch (Exception e)
                     {
-                        _logger.LogError(e.Message);
+                        _logger.LogError($"reset version error from ip: {ctrl.RemoteIp}");
                     }
                 }
                 else if (ctrl.ControllerType == "Faucet")
@@ -144,10 +148,14 @@ namespace KcsWriteLog.Controllers
                         StringContent content = new StringContent("", Encoding.UTF8, "application/json");
                         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", "a2FyYWY6a2FyYWY=");
                         HttpResponseMessage res = await client.PutAsync($"http://{ctrl.RemoteIp}:8080/faucet/sina/versions/reset-versions", content);
+                        if (!res.IsSuccessStatusCode)
+                        {
+                            _logger.LogWarning($"reset version fail from ip: {ctrl.RemoteIp} status code: {res.StatusCode}");
+                        }
                     }
                     catch (Exception e)
                     {
-                        _logger.LogError(e.Message);
+                        _logger.LogError($"reset version error from ip: {ctrl.RemoteIp}");
                     }
                 }
                 else if (ctrl.ControllerType == "ODL")
@@ -157,10 +165,14 @@ namespace KcsWriteLog.Controllers
                         StringContent content = new StringContent("", Encoding.UTF8, "application/json");
                         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", "YWRtaW46YWRtaW4=");
                         HttpResponseMessage res = await client.PostAsync($"http://{ctrl.RemoteIp}:8181/restconf/operations/sina:resetVersions", content);
+                        if (!res.IsSuccessStatusCode)
+                        {
+                            _logger.LogWarning($"reset version fail from ip: {ctrl.RemoteIp} status code: {res.StatusCode}");
+                        }
                     }
                     catch (Exception e)
                     {
-                        _logger.LogError(e.Message);
+                        _logger.LogError($"reset version error from ip: {ctrl.RemoteIp}");
                     }
                 }
             }

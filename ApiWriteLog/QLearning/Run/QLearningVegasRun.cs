@@ -22,8 +22,7 @@ namespace QLearningProject.Run
         /// Chạy xong trả ra R W mới
         /// </summary>
         /// <returns></returns>
-        public RWValueVegas Run(int r, int w, int N, int oldNumSuccess, int oldNumRequest, int newNumSuccess, int newNumRequest,
-            int l1, int l2, int NOE, int numSuccessForAction, int numRequestForAction, double[][] oldRewards, double[][] oldQTable,
+        public RWValueVegas Run(int r, int w, int N, int l1, int l2, int NOE, int numSuccess, int numRequest, double[][] oldRewards, double[][] oldQTable,
             LogState[] logState, Queue<double> logCSC, bool violateRead, bool violateWrite)
         {
             LogState lastState = null;
@@ -34,12 +33,12 @@ namespace QLearningProject.Run
             var problem = new SDNProblem(oldRewards);
 
             var qLearning = new QLearningVegas(_loggerQlearning, gamma: 0.8, epsilon: 0.5, alpha: 0.6,
-                problem, numSuccessForAction, numRequestForAction, oldQTable, logState, logCSC, N);
+                problem, numSuccess, numRequest, oldQTable, logState, logCSC, N);
 
-            _loggerQlearningRun.LogInformation($"r/R: {numSuccessForAction}/{numRequestForAction} = {numSuccessForAction / (double)numRequestForAction}");
+            _loggerQlearningRun.LogInformation($"r/R: {numSuccess}/{numRequest} = {numSuccess / (double)numRequest}");
 
             //tính reward mới
-            double newReward = Math.Round((newNumSuccess - oldNumSuccess) / (double)(newNumRequest - oldNumRequest) * 100);
+            double newReward = Math.Round(numSuccess / (double)numRequest * 100);
             if (violateRead || violateWrite)
             {
                 newReward = -100;
