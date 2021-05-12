@@ -22,24 +22,23 @@ namespace QLearningProject.Run
         /// Chạy xong trả ra R W mới
         /// </summary>
         /// <returns></returns>
-        public RWValueVegas Run(int r, int w, int N, int oldNumSuccess, int oldNumRequest, int newNumSuccess, int newNumRequest,
-            int l1, int l2, int NOE, int numSuccessForAction, int numRequestForAction, double[][] oldRewards, double[][] oldQTable,
-            LogState[] logState, Queue<double> logCSC, bool violateRead, bool violateWrite)
+        public RWValueVegas Run(int r, int w, int N, int l1, int l2, int NOE, int numSuccess, int numRequest, double[][] oldRewards, double[][] oldQTable,
+            List<LogState> logState, Queue<double> logCSC, bool violateRead, bool violateWrite)
         {
             LogState lastState = null;
-            if (logState.Length > 0)
+            if (logState.Count > 0)
             {
                 lastState = logState[^1];
             }
             var problem = new SDNProblem(oldRewards);
 
             var qLearning = new QLearningVegas(_loggerQlearning, gamma: 0.8, epsilon: 0.5, alpha: 0.6,
-                problem, numSuccessForAction, numRequestForAction, oldQTable, logState, logCSC, N);
+                problem, numSuccess, numRequest, oldQTable, logState, logCSC, N);
 
-            _loggerQlearningRun.LogInformation($"r/R: {numSuccessForAction}/{numRequestForAction} = {numSuccessForAction / (double)numRequestForAction}");
+            _loggerQlearningRun.LogInformation($"r/R: {numSuccess}/{numRequest} = {numSuccess / (double)numRequest}");
 
             //tính reward mới
-            double newReward = Math.Round((newNumSuccess - oldNumSuccess) / (double)(newNumRequest - oldNumRequest) * 100);
+            double newReward = Math.Round(numSuccess / (double)numRequest * 100);
             if (violateRead || violateWrite)
             {
                 newReward = -100;
@@ -62,6 +61,15 @@ namespace QLearningProject.Run
                 problem.rewards[state][action] = newReward;
             }
 
+            //chèn thêm state mới vào log state
+            logState.Add(new LogState
+            {
+                l1 = l1,
+                l2 = l2,
+                NOE = NOE,
+                action = -1 //chưa gán action sau khi run mới có action
+            });
+
             //show reward và q value
             _loggerQlearningRun.LogInformation($"Reward:\n{problem.ShowReward()}");
             //_loggerQlearningRun.LogInformation($"QTable:\n{qLearning.ShowQTable()}");
@@ -77,11 +85,11 @@ namespace QLearningProject.Run
                 {
                     newAction = 5;
                 }
-
                 if (violateWrite)
                 {
                     newAction = 4;
                 }
+                logState[^1].action = newAction; //gán action lựa chọn là gì
 
                 _loggerQlearningRun.LogInformation($"from state {initialState} new action: {newAction}");
                 int newR = r;

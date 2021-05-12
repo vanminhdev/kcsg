@@ -14,9 +14,13 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -32,6 +36,7 @@ import org.json.JSONObject;
 
 import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.mdsal.binding.api.DataObjectModification;
+import org.opendaylight.mdsal.binding.api.DataObjectModification.ModificationType;
 import org.opendaylight.mdsal.binding.api.DataTreeChangeListener;
 import org.opendaylight.mdsal.binding.api.DataTreeIdentifier;
 import org.opendaylight.mdsal.binding.api.DataTreeModification;
@@ -88,10 +93,6 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
 
     public static final String INIT_PATH = "/home/onos/sdn";
 
-    @SuppressWarnings(value = { "MS_PKGPROTECT", "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD" })
-    @SuppressFBWarnings(value = { "MS_PKGPROTECT", "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD" })
-    private static String nodeState = null;
-
     final InstanceIdentifier<Node> instanceIdentifier = InstanceIdentifier.builder(Nodes.class).child(Node.class)
             .build();
 
@@ -134,36 +135,89 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
 
     private void onDataChanged(DataTreeModification<Node> change) {
         final DataObjectModification<Node> node = change.getRootNode();
-        switch (node.getModificationType()) {
-            case DELETE:
-                //LOG.info(MSG, "********************** Node Remove ***************");
-                //LOG.info(MSG, "NETCONF Node was removed: " + node.getIdentifier());
-                handleOnDataChanged();
-                break;
-            case SUBTREE_MODIFIED:
-                //LOG.info(MSG, "****************** Node Modify ***************");
-                //LOG.info(MSG, "NETCONF Node was updated: " + node.getIdentifier());
-                handleOnDataChanged();
-                break;
-            case WRITE:
-                //LOG.info(MSG, "********************* Node Add ************************");
-                //LOG.info(MSG, "NETCONF Node was created: " + node.getIdentifier());
-                handleOnDataChanged();
-                break;
-            default:
-                throw new IllegalStateException("Unhandled node change" + change);
+        if (node.getModificationType() == ModificationType.DELETE) {
+            //LOG.info(MSG, "********************** Node Remove ***************");
+            //LOG.info(MSG, "NETCONF Node was removed: " + node.getIdentifier());
+            handleOnDataChanged();
+        } else if (node.getModificationType() == ModificationType.SUBTREE_MODIFIED) {
+            LOG.info(MSG, "****************** Node Modify ***************");
+            LOG.info(MSG, "NETCONF Node was updated: " + node.getIdentifier());
+            handleOnDataChanged();
+        } else if (node.getModificationType() == ModificationType.WRITE) {
+            //LOG.info(MSG, "********************* Node Add ************************");
+            //LOG.info(MSG, "NETCONF Node was created: " + node.getIdentifier());
+            handleOnDataChanged();
         }
+    }
+
+    private void writeNodeState(String str) {
+        String path = INIT_PATH;
+        OutputStreamWriter outputStreamWriter = null;
+        BufferedWriter bufferWriter = null;
+        try {
+            outputStreamWriter = new OutputStreamWriter(
+                new FileOutputStream(path + "/nodeState.txt", false),
+                StandardCharsets.UTF_8
+            );
+            bufferWriter = new BufferedWriter(outputStreamWriter);
+            bufferWriter.write(str);
+        } catch (IOException e) {
+            LOG.error(MSG, "write node state error");
+        } finally {
+            try {
+                if (bufferWriter != null) {
+                    bufferWriter.close();
+                }
+                if (outputStreamWriter != null) {
+                    outputStreamWriter.close();
+                }
+            } catch (IOException e) {
+                LOG.error(MSG, e.getMessage());
+            }
+        }
+    }
+
+    private String readNodeState() {
+        String path = INIT_PATH;
+        String str = "";
+        InputStreamReader inputStreamReader = null;
+        BufferedReader buffReader = null;
+        try {
+            inputStreamReader = new InputStreamReader(
+                new FileInputStream(path + "/nodeState.txt"), StandardCharsets.UTF_8
+            );
+            buffReader = new BufferedReader(inputStreamReader);
+            String line;
+
+            while ((line = buffReader.readLine()) != null) {
+                return line;
+            }
+        } catch (IOException e) {
+            LOG.error(MSG, "read node state error");
+        } finally {
+            try {
+                if (buffReader != null) {
+                    buffReader.close();
+                }
+                if (inputStreamReader != null) {
+                    inputStreamReader.close();
+                }
+            } catch (IOException e) {
+                LOG.error(MSG, e.getMessage());
+            }
+        }
+        return str;
     }
 
     private void handleOnDataChanged() {
         HashMap<String, Boolean> nodeLinkDowns = new HashMap<>();
         try {
-            Unirest.setTimeouts(0, 0);
             String url = "http://localhost:8181/restconf/operational/opendaylight-inventory:nodes";
             HttpResponse<String> response;
             response = Unirest.get(url).header("Accept", "application/json")
                     .header("Authorization", "Basic YWRtaW46YWRtaW4=").asString();
             JSONObject root = new JSONObject(response.getBody());
+            LOG.info(MSG,"len: " + response.getBody().getBytes(StandardCharsets.UTF_8).length);
             JSONArray nodes = (root.getJSONObject("nodes")).getJSONArray("node");
             for (int i = 0; i < nodes.length(); i++) {
                 JSONArray nodeConnector = nodes.getJSONObject(i).getJSONArray("node-connector");
@@ -177,12 +231,13 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
             }
             JSONObject result = new JSONObject(nodeLinkDowns);
             String newNodeState = result.toString();
+            String nodeState = readNodeState();
             if (nodeState != null && !nodeState.equals(newNodeState)) {
                 LOG.info(MSG,"old: " + nodeState);
                 LOG.info(MSG,"new: " + newNodeState);
                 writeLogChange();
+                writeNodeState(result.toString());
             }
-            nodeState = result.toString();
         } catch (UnirestException e) {
             LOG.error(MSG, e.getMessage());
         } catch (JSONException e) {
@@ -704,7 +759,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         long timeRead = System.currentTimeMillis();
         long tstaleness = 0;
         if (listTStaleness.size() > 0) {
-            long maxTimeSet = Collections.min(listTStaleness);
+            long maxTimeSet = Collections.max(listTStaleness);
             tstaleness = timeRead - maxTimeSet;
         }
 

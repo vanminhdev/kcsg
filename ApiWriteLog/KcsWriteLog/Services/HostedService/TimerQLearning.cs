@@ -44,17 +44,17 @@ namespace KcsWriteLog.Services.HostedService
             _timer = new Timer(DoWork, null, TimeSpan.Zero,
                 TimeSpan.FromSeconds(10));
             #region load qtable from db
-            if (File.Exists(@"C:\Users\84389\Documents\sdn\jsonRewards.json") && File.Exists(@"C:\Users\84389\Documents\sdn\jsonQtable.json"))
-            {
-                string jsonRewards = File.ReadAllText(@"C:\Users\84389\Documents\sdn\jsonRewards.json");
-                string jsonQtable = File.ReadAllText(@"C:\Users\84389\Documents\sdn\jsonRewards.json");
-                oldRewards = JsonSerializer.Deserialize<double[][]>(jsonRewards);
-                oldQTable = JsonSerializer.Deserialize<double[][]>(jsonQtable);
-            }
-            else
-            {
-                _loggerQlearningRun.LogWarning("DB not have Qtable");
-            }
+            //if (File.Exists(@"C:\Users\84389\Documents\sdn\jsonRewards.json") && File.Exists(@"C:\Users\84389\Documents\sdn\jsonQtable.json"))
+            //{
+            //    string jsonRewards = File.ReadAllText(@"C:\Users\84389\Documents\sdn\jsonRewards.json");
+            //    string jsonQtable = File.ReadAllText(@"C:\Users\84389\Documents\sdn\jsonRewards.json");
+            //    oldRewards = JsonSerializer.Deserialize<double[][]>(jsonRewards);
+            //    oldQTable = JsonSerializer.Deserialize<double[][]>(jsonQtable);
+            //}
+            //else
+            //{
+            //    _loggerQlearningRun.LogWarning("DB not have Qtable");
+            //}
             #endregion
             return Task.CompletedTask;
         }
@@ -142,7 +142,7 @@ namespace KcsWriteLog.Services.HostedService
 
             //chạy qlearning
             var newValue = _qLearning.Run(rwConfig.R, rwConfig.W, N, l1, l2, NOE, numSuccess, numRequest,
-                oldRewards, oldQTable, _logState.ToArray(), t, nPull, violateRead, violateWrite);
+                oldRewards, oldQTable, _logState, t, nPull, violateRead, violateWrite);
 
             oldRewards = newValue.rewards;
             oldQTable = newValue.qTable;
@@ -190,23 +190,15 @@ namespace KcsWriteLog.Services.HostedService
                 Time = DateTime.Now
             });
 
-            _logState.Add(new LogState
-            {
-                l1 = l1,
-                l2 = l2,
-                NOE = NOE,
-                action = newValue.Action
-            });
-
             _loggerQlearningRun.LogInformation($"new R: {newValue.R}, W: {newValue.W}");
             _loggerQlearningRun.LogInformation("==========================================================================================================================");
             _context.SaveChanges();
 
             #region save q table to text
-            var jsonRewards = JsonSerializer.Serialize(oldRewards);
-            var jsonQtable = JsonSerializer.Serialize(oldQTable);
-            File.WriteAllText(@"C:\Users\84389\Documents\sdn\jsonRewards.json", jsonRewards);
-            File.WriteAllText(@"C:\Users\84389\Documents\sdn\jsonQtable.json", jsonQtable);
+            //var jsonRewards = JsonSerializer.Serialize(oldRewards);
+            //var jsonQtable = JsonSerializer.Serialize(oldQTable);
+            //File.WriteAllText(@"C:\Users\84389\Documents\sdn\jsonRewards.json", jsonRewards);
+            //File.WriteAllText(@"C:\Users\84389\Documents\sdn\jsonQtable.json", jsonQtable);
             #endregion
         }
 
