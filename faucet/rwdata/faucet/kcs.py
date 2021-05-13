@@ -292,6 +292,7 @@ class Kcs:
                 print(res)
                 return len(bytes(send_data))
             elif kind_dst == kinds['ODL']:
+                headers["Authorization"] = "Basic YWRtaW46YWRtaW4="
                 api = 'http://' + ip_dst + ':8181/restconf/operations/sina:updateVersion'
                 print(api)
                 data = {"input": {"data": json.dumps({"ip": ip, "version": version})}}
