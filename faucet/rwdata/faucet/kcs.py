@@ -275,10 +275,7 @@ class Kcs:
                 print('send_data: ' + send_data)
 
                 r = requests.post(url=api, data=send_data, headers=headers)
-                print('r.text: ' + r.text)
-                res = json.loads(r.text)
-                print(res)
-
+                print('write status code: ' + str(r.status_code))
                 return len(bytes(send_data))
             elif kind_dst == kinds['ONOS']:
                 api = 'http://' + ip_dst + ':8181/onos/rwdata/communicate/update-version'
@@ -288,8 +285,7 @@ class Kcs:
                 print(send_data)
 
                 r = requests.post(url=api, data=send_data, headers=headers)
-                res = json.loads(r.text)
-                print(res)
+                print('write status code: ' + str(r.status_code))
                 return len(bytes(send_data))
             elif kind_dst == kinds['ODL']:
                 headers["Authorization"] = "Basic YWRtaW46YWRtaW4="
@@ -300,8 +296,7 @@ class Kcs:
                 print(send_data)
 
                 r = requests.post(url=api, data=send_data, headers=headers)
-                res = json.loads(r.text)
-                print(res)
+                print('write status code: ' + str(r.status_code))
                 return len(bytes(send_data))
         except Exception as e:
             logging.error(e)
