@@ -384,7 +384,7 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         }
         JSONObject bodyReq = new JSONObject();
         bodyReq.put("ip", myIpAddress);
-        bodyReq.put("version", ver);
+        bodyReq.put("version", version);
         HandleCallServer.updateVersion(bodyReq);
         HandleCallServer.sendLogWrite(log);
     }
