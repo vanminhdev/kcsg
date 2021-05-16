@@ -130,8 +130,8 @@ class Kcs:
             print(local_ver)
             local_ver += 1
             Kcs.update_version_file([{'ip': Kcs.local_ip, 'version': local_ver}])
-            HandleCallServer.update_version(Kcs.local_ip, local_ver)
             Kcs.write_data(Kcs.local_ip, local_ver)
+            HandleCallServer.update_version(Kcs.local_ip, local_ver)
         except Exception as e:
             logging.error(e)
 
