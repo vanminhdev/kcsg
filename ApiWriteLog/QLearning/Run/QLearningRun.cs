@@ -45,13 +45,12 @@ namespace QLearningProject.Run
             }
             var problem = new SDNProblem(oldRewards);
 
-            var qLearning = new QLearning(_loggerQlearning, gamma: 0.8, epsilon: 0.5, alpha: 0.6,
+            var qLearning = new QLearning(_loggerQlearning, gamma: 0.8, epsilon: 0.2, alpha: 0.6,
                 problem, numSuccess, numRequest, oldQTable, logState, t, nPull);
 
-            _loggerQlearningRun.LogInformation($"r/R: {numSuccess}/{numRequest} = {numSuccess/(double)numRequest}");
-
             //tính reward mới
-            double newReward = Math.Round(numSuccess / (double)numRequest * 100);
+            double newReward = Math.Round(numSuccess / (double)numRequest * 100) - 50;
+            //double newReward = Math.Round(numSuccess / (double)numRequest * 100) - 50;
             if(violateRead || violateWrite)
             {
                 newReward = -100;
@@ -62,10 +61,14 @@ namespace QLearningProject.Run
             if (lastState != null) //cập nhật lại reward tại vị trí (state,action) cũ
             {
                 _loggerQlearningRun.LogInformation($"Last state {problem.GetState(lastState.l1, lastState.l2, lastState.NOE)}");
-
                 problem.rewards[problem.GetState(lastState.l1, lastState.l2, lastState.NOE)][lastState.action] = newReward;
                 //từ lần thứ 2 trở đi lấy init state bằng state trước đó
                 initialState = problem.GetState(lastState.l1, lastState.l2, lastState.NOE);
+
+                //tinh q value
+                int intCurrState = problem.GetState(l1, l2, NOE);
+                int intLastState = problem.GetState(lastState.l1, lastState.l2, lastState.NOE);
+                qLearning.UpdateQTable(intCurrState, intLastState, lastState.action, newReward);
             }
             else // lần đầu set reward
             {
@@ -88,14 +91,15 @@ namespace QLearningProject.Run
                 l1 = l1,
                 l2 = l2,
                 NOE = NOE,
-                action = -1 //chưa gán action sau khi run mới có action
+                action = 0 //chưa gán action sau khi run mới có action
             });
 
             //show reward trước train và q value
             _loggerQlearningRun.LogInformation($"Reward:\n{problem.ShowReward()}");
             //_loggerQlearningRun.LogInformation($"QTable:\n{qLearning.ShowQTable()}");
-            qLearning.TrainAgent(200);
             _loggerQlearningRun.LogInformation($"QTable sau train:\n{qLearning.ShowQTable()}");
+
+            _loggerQlearningRun.LogInformation($"r/R: {numSuccess}/{numRequest} = {numSuccess / (double)numRequest}");
 
             var newAction = 0;
             try
@@ -104,10 +108,12 @@ namespace QLearningProject.Run
                 newAction = qLearning.Run(initialState);
                 if (violateRead)
                 {
+                    _loggerQlearningRun.LogWarning($"Violate Read, Client metric: {l2}, oldR: {r}, newR: {r - 1}");
                     newAction = 5;
                 }
                 if (violateWrite)
                 {
+                    _loggerQlearningRun.LogWarning($"Violate Write, Stale metric: {l1}, oldW: {w}, newW: {w - 1}");
                     newAction = 4;
                 }
                 logState[^1].action = newAction; //gán action lựa chọn là gì

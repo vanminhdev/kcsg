@@ -60,10 +60,6 @@ namespace KcsWriteLog.Services.HostedService
             return Task.CompletedTask;
         }
 
-        /// <summary>
-        /// Khởi tạo r w cho r cao w nhỏ để request đầu tiên có success
-        /// </summary>
-        /// <param name="state"></param>
         private void DoWork(object state)
         {
             var scope = _scopeFactory.CreateScope();
@@ -84,14 +80,20 @@ namespace KcsWriteLog.Services.HostedService
                 return;
             }
 
-           #region num success / num request, l1 l2 NOE
+            #region num success / num request, l1 l2 NOE
             //range: 10s trước ->  hiện tại
             //Client metric là log read
             //Stale metric là log write
             var rangeEnd = DateTime.Now;
             var rangeStart = rangeEnd.AddSeconds(-10);
-            var logRead = _context.DataTrainings.Where(o => o.Time >= rangeStart && o.Time <= rangeEnd && o.ClientMetric != TimeSpan.Zero).ToList();
-            var logWrite = _context.DataTrainings.Where(o => o.Time >= rangeStart && o.Time <= rangeEnd && o.StaleMetric != TimeSpan.Zero).ToList();
+            var logRead = _context.DataTrainings.Where(o => o.Time >= rangeStart && o.Time <= rangeEnd && o.ClientMetric != TimeSpan.Zero)
+                .ToList()
+                .Where(o => o.ClientMetric.TotalMilliseconds < 300)
+                .ToList();
+            var logWrite = _context.DataTrainings.Where(o => o.Time >= rangeStart && o.Time <= rangeEnd && o.StaleMetric != TimeSpan.Zero)
+                .ToList()
+                .Where(o => o.StaleMetric.TotalMilliseconds < 300)
+                .ToList();
 
             //để tính r/R
             var numSuccess = logRead.Where(o => o.IsVersionSuccess).Count();
@@ -106,8 +108,8 @@ namespace KcsWriteLog.Services.HostedService
             }
 
             #region latency
-            double thresholdRead = 8;
-            double thresholdWrite = 85;
+            double thresholdRead = 10;
+            double thresholdWrite = 65;
 
             bool violateRead = false;
             bool violateWrite = false;
@@ -145,6 +147,7 @@ namespace KcsWriteLog.Services.HostedService
             _loggerQlearningRun.LogInformation($"l1, l2, NOE = {l1}, {l2}, {NOE}");
             int N = _context.ControllerIps.Where(o => o.IsActive != null && o.IsActive.Value).Count(); //số controller
             #endregion
+
             var newValue = _qLearning.Run(rwConfig.R, rwConfig.W, N, l1, l2, NOE, numSuccess, numRequest,
                 oldRewards, oldQTable, _logState, _logCSC, violateRead, violateWrite);
 

@@ -124,6 +124,7 @@ namespace QLearningProject.MachineLearning
             this.numRequestForAction = numRequestForAction;
         }
 
+
         /// <summary>
         /// Bắt đầu training, khơi tạo init sate bằng cách random state trong tập state đã biết
         /// sau đó tính q value
@@ -184,7 +185,10 @@ namespace QLearningProject.MachineLearning
             else
             {
                 var qValueMax = _qTable[currentState].Max();
-                action = _qTable[currentState].ToList().IndexOf(qValueMax);
+                var maxIndexes = Enumerable.Range(0, 6)
+                .Where(i => _qTable[currentState][i] == qValueMax)
+                .ToList();
+                action = maxIndexes[_random.Next(0, maxIndexes.Count())];
             }
 
             _t++; //đếm số lần pull
@@ -270,6 +274,15 @@ namespace QLearningProject.MachineLearning
                 }
             }
             return 0;
+        }
+
+        public void UpdateQTable(int currentState, int lastState, int lastAction, double reward)
+        {
+            double maxQValue = _qTable[currentState].Max();
+            //tính ra value mới
+            double qLastState = _qTable[lastState][lastAction] + _alpha * (reward + _gamma * maxQValue - _qTable[lastState][lastAction]);
+            //cập nhật vào q table
+            _qTable[lastState][lastAction] = qLastState;
         }
 
         /// <summary>

@@ -47,7 +47,7 @@ namespace KcsWriteLog.Services.HostedService
             //if (File.Exists(@"C:\Users\84389\Documents\sdn\jsonRewards.json") && File.Exists(@"C:\Users\84389\Documents\sdn\jsonQtable.json"))
             //{
             //    string jsonRewards = File.ReadAllText(@"C:\Users\84389\Documents\sdn\jsonRewards.json");
-            //    string jsonQtable = File.ReadAllText(@"C:\Users\84389\Documents\sdn\jsonRewards.json");
+            //    string jsonQtable = File.ReadAllText(@"C:\Users\84389\Documents\sdn\jsonQtable.json");
             //    oldRewards = JsonSerializer.Deserialize<double[][]>(jsonRewards);
             //    oldQTable = JsonSerializer.Deserialize<double[][]>(jsonQtable);
             //}
@@ -84,8 +84,14 @@ namespace KcsWriteLog.Services.HostedService
             //Stale metric là log write
             var rangeEnd = DateTime.Now;
             var rangeStart = rangeEnd.AddSeconds(-10);
-            var logRead = _context.DataTrainings.Where(o => o.Time >= rangeStart && o.Time <= rangeEnd && o.ClientMetric != TimeSpan.Zero).ToList();
-            var logWrite = _context.DataTrainings.Where(o => o.Time >= rangeStart && o.Time <= rangeEnd && o.StaleMetric != TimeSpan.Zero).ToList();
+            var logRead = _context.DataTrainings.Where(o => o.Time >= rangeStart && o.Time <= rangeEnd && o.ClientMetric != TimeSpan.Zero)
+                .ToList()
+                .Where(o => o.ClientMetric.TotalMilliseconds < 300)
+                .ToList();
+            var logWrite = _context.DataTrainings.Where(o => o.Time >= rangeStart && o.Time <= rangeEnd && o.StaleMetric != TimeSpan.Zero)
+                .ToList()
+                .Where(o => o.StaleMetric.TotalMilliseconds < 300)
+                .ToList();
 
             //để tính r/R
             var numSuccess = logRead.Where(o => o.IsVersionSuccess).Count();
@@ -100,8 +106,8 @@ namespace KcsWriteLog.Services.HostedService
             }
 
             #region latency
-            double thresholdRead = 8;
-            double thresholdWrite = 85;
+            double thresholdRead = 20;
+            double thresholdWrite = 30;
 
             bool violateRead = false;
             bool violateWrite = false;
@@ -136,14 +142,13 @@ namespace KcsWriteLog.Services.HostedService
 
             int NOE = logRead.Count(o => !o.IsVersionSuccess); //số lần đọc lỗi
 
-            _loggerQlearningRun.LogInformation($"l1, l2, NOE = {l1}, {l2}, {NOE}");
+            _loggerQlearningRun.LogInformation($"l2, avgRead, l1, avgWrite, NOE, R, W = {l1}, {LatencyReadAvg}, {l2}, {LatencyWriteAvg}, {NOE}, {rwConfig.R}, {rwConfig.W}");
             int N = _context.ControllerIps.Where(o => o.IsActive != null && o.IsActive.Value).Count(); //số controller
             #endregion
 
             //chạy qlearning
             var newValue = _qLearning.Run(rwConfig.R, rwConfig.W, N, l1, l2, NOE, numSuccess, numRequest,
                 oldRewards, oldQTable, _logState, t, nPull, violateRead, violateWrite);
-
             oldRewards = newValue.rewards;
             oldQTable = newValue.qTable;
             t = newValue.t;

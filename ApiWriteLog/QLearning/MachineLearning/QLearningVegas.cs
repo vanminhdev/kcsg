@@ -116,12 +116,12 @@ namespace QLearningProject.MachineLearning
                     _logCSC.Dequeue();
                 }
 
-                var diff = _numCtrl * ((1 - CSC) / CSCBase);
-                if (diff <= 8)
+                var diff = _numCtrl * (1 - CSC / CSCBase);
+                if (diff <= 2)
                 {
                     action = _random.Next(4, 6);
                 }
-                else if (diff > 8 && diff < 11)
+                else if (diff > 2 && diff <= 9)
                 {
                     action = _random.Next(2, 4);
                 }
@@ -136,6 +136,15 @@ namespace QLearningProject.MachineLearning
                 action = _qTable[currentState].ToList().IndexOf(qValueMax);
             }
             return action;
+        }
+
+        public void UpdateQTable(int currentState, int lastState, int lastAction, double reward)
+        {
+            double maxQValue = _qTable[currentState].Max();
+            //tính ra value mới
+            double qLastState = _qTable[lastState][lastAction] + _alpha * (reward + _gamma * maxQValue - _qTable[lastState][lastAction]);
+            //cập nhật vào q table
+            _qTable[lastState][lastAction] = qLastState;
         }
 
         /// <summary>

@@ -8,9 +8,8 @@ namespace QLearningProject.Problems
     class SDNProblem : IQLearningProblem
     {
         public Dictionary<int, Tuple<int, int, int>> DicState = new Dictionary<int, Tuple<int, int, int>>();
-        public int[,,] svalue { get; set; } = new int[100, 100, 100];
         public double[][] rewards { get; set; }
-        public int NumberOfStates => svalue.Length;
+        public int NumberOfStates => 301 * 301 * 101;
         public int NumberOfActions => 6;
 
         /// <summary>
@@ -20,24 +19,10 @@ namespace QLearningProject.Problems
         /// <param name="oldRewards"></param>
         public SDNProblem(double[][] oldRewards)
         {
-            int val = 0;
-            for (int i = 0; i < 100; i++)
-            {
-                for (int j = 0; j < 100; j++)
-                {
-                    for (int k = 0; k < 100; k++)
-                    {
-                        svalue[i, j, k] = val;
-                        DicState.Add(val, new Tuple<int, int, int>(i, j, k));
-                        val++;
-                    }
-                }
-            }
-
             if (oldRewards == null)
             {
-                rewards = new double[NumberOfStates][];
-                for (int i = 0; i < NumberOfStates; i++)
+                rewards = new double[NumberOfStates + 1][];
+                for (int i = 0; i < NumberOfStates + 1; i++)
                 {
                     rewards[i] = new double[] { 0, 0, 0, 0, 0, 0 };
                 }
@@ -57,16 +42,9 @@ namespace QLearningProject.Problems
         /// <returns></returns>
         public int GetState(int L1, int L2, int NOE)
         {
-            return svalue[L1,L2,NOE];
-        }
-
-        public Tuple<int, int, int> GetSByValue(int value)
-        {
-            if (DicState.ContainsKey(value))
-            {
-                return DicState[value];
-            }
-            return null;
+            return NOE + L2 * 100 + L1 * 30000;
+            //return NOE + L2 * 100 + L1 * 10000;
+            //return svalue[L1,L2,NOE];
         }
 
         /// <summary>
