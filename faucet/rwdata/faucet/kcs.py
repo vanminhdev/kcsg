@@ -131,6 +131,7 @@ class Kcs:
             local_ver += 1
             Kcs.update_version_file([{'ip': Kcs.local_ip, 'version': local_ver}])
             Kcs.write_data(Kcs.local_ip, local_ver)
+            HandleCallServer.update_version(Kcs.local_ip, local_ver)
         except Exception as e:
             logging.error(e)
 
@@ -274,10 +275,7 @@ class Kcs:
                 print('send_data: ' + send_data)
 
                 r = requests.post(url=api, data=send_data, headers=headers)
-                print('r.text: ' + r.text)
-                res = json.loads(r.text)
-                print(res)
-
+                print('write status code: ' + str(r.status_code))
                 return len(bytes(send_data))
             elif kind_dst == kinds['ONOS']:
                 api = 'http://' + ip_dst + ':8181/onos/rwdata/communicate/update-version'
@@ -287,10 +285,10 @@ class Kcs:
                 print(send_data)
 
                 r = requests.post(url=api, data=send_data, headers=headers)
-                res = json.loads(r.text)
-                print(res)
+                print('write status code: ' + str(r.status_code))
                 return len(bytes(send_data))
             elif kind_dst == kinds['ODL']:
+                headers["Authorization"] = "Basic YWRtaW46YWRtaW4="
                 api = 'http://' + ip_dst + ':8181/restconf/operations/sina:updateVersion'
                 print(api)
                 data = {"input": {"data": json.dumps({"ip": ip, "version": version})}}
@@ -298,8 +296,7 @@ class Kcs:
                 print(send_data)
 
                 r = requests.post(url=api, data=send_data, headers=headers)
-                res = json.loads(r.text)
-                print(res)
+                print('write status code: ' + str(r.status_code))
                 return len(bytes(send_data))
         except Exception as e:
             logging.error(e)

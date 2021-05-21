@@ -383,9 +383,7 @@ class Faucet(RyuAppBase):
 
             print('PORT EVENT')
 
-            #Kcs.write_local_log(api_path='http://localhost:8080/faucet/sina/getportmac', event_type='port_mac')
-            #Kcs.write_local_log(api_path='http://localhost:8080/faucet/sina/getportmac', event_type='l2_port')
-
+            Kcs.write_local_log(api_path='http://localhost:8080/faucet/sina/getportmac', event_type='port_mac')
             self.logger.info("************************** port change ***********************")
         except Exception as e:
             self.logger.error(e)
@@ -405,7 +403,6 @@ class Faucet(RyuAppBase):
             # self.write_action_log()
 
             print('SWITCH EVENT')
-
             Kcs.write_local_log(api_path='http://localhost:8080/faucet/sina/getportmac', event_type='port_mac')
         except Exception as e:
             self.logger.error(e)
