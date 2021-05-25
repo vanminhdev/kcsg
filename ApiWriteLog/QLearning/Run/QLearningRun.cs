@@ -24,49 +24,51 @@ namespace QLearningProject.Run
         /// <param name="r"></param>
         /// <param name="w"></param>
         /// <param name="N"></param>
-        /// <param name="oldNumSuccess"></param>
-        /// <param name="oldNumRequest"></param>
-        /// <param name="newNumSuccess"></param>
-        /// <param name="newNumRequest"></param>
         /// <param name="l1"></param>
         /// <param name="l2"></param>
         /// <param name="NOE"></param>
-        /// <param name="numSuccessForAction"></param>
-        /// <param name="numRequestForAction"></param>
+        /// <param name="numSuccess"></param>
+        /// <param name="numRequest"></param>
         /// <param name="oldRewards"></param>
         /// <param name="oldQTable"></param>
         /// <param name="logState"></param>
         /// <param name="t"></param>
         /// <param name="nPull"></param>
         /// <returns></returns>
-        public RWValue Run(int r, int w, int N, int oldNumSuccess, int oldNumRequest, int newNumSuccess, int newNumRequest,
-            int l1, int l2, int NOE, int numSuccessForAction, int numRequestForAction, double[][] oldRewards, double[][] oldQTable,
-            LogState[] logState, int t, Dictionary<StateAndAction, int> nPull)
+        public RWValue Run(int r, int w, int N, int l1, int l2, int NOE, int numSuccess, int numRequest, double[][] oldRewards, double[][] oldQTable,
+            List<LogState> logState, int t, Dictionary<StateAndAction, int> nPull, bool violateRead, bool violateWrite)
         {
             LogState lastState = null;
-            if (logState.Length > 0)
+            if (logState.Count > 0)
             {
                 lastState = logState[^1];
             }
             var problem = new SDNProblem(oldRewards);
 
-            var qLearning = new QLearning(_loggerQlearning, gamma: 0.8, epsilon: 0.4, alpha: 0.6,
-                problem, numSuccessForAction, numRequestForAction, oldQTable, logState, t, nPull);
-
-            _loggerQlearningRun.LogInformation($"r/R: {numSuccessForAction}/{numRequestForAction} = {numSuccessForAction/(double)numRequestForAction}");
+            var qLearning = new QLearning(_loggerQlearning, gamma: 0.8, epsilon: 0.2, alpha: 0.6,
+                problem, numSuccess, numRequest, oldQTable, logState, t, nPull);
 
             //tính reward mới
-            double newReward = Math.Round((newNumSuccess - oldNumSuccess) / (double)(newNumRequest - oldNumRequest) * 100);
+            double newReward = Math.Round(numSuccess / (double)numRequest * 100) - 50;
+            //double newReward = Math.Round(numSuccess / (double)numRequest * 100) - 50;
+            if(violateRead || violateWrite)
+            {
+                newReward = -100;
+            }
 
             //state khởi tạo
             int initialState = 0;
             if (lastState != null) //cập nhật lại reward tại vị trí (state,action) cũ
             {
                 _loggerQlearningRun.LogInformation($"Last state {problem.GetState(lastState.l1, lastState.l2, lastState.NOE)}");
-
                 problem.rewards[problem.GetState(lastState.l1, lastState.l2, lastState.NOE)][lastState.action] = newReward;
                 //từ lần thứ 2 trở đi lấy init state bằng state trước đó
                 initialState = problem.GetState(lastState.l1, lastState.l2, lastState.NOE);
+
+                //tinh q value
+                int intCurrState = problem.GetState(l1, l2, NOE);
+                int intLastState = problem.GetState(lastState.l1, lastState.l2, lastState.NOE);
+                qLearning.UpdateQTable(intCurrState, intLastState, lastState.action, newReward);
             }
             else // lần đầu set reward
             {
@@ -74,27 +76,48 @@ namespace QLearningProject.Run
                 int state = problem.GetState(l1, l2, NOE);
 
                 #region khởi tạo reward chỉ dùng cho epsilon greedy
-                //int action = qLearning.SelectAction(state);
-                //problem.rewards[state][action] = newReward;
+                int action = qLearning.SelectAction(state);
+                problem.rewards[state][action] = newReward;
                 #endregion
 
                 #region khởi tạo q value chỉ (chỉ dùng cho ucb và softmax)
                 //qLearning.InitFirstQValue(state);
-                //L1 L2 NOE
                 #endregion
             }
+
+            //chèn thêm state mới vào log state
+            logState.Add(new LogState
+            {
+                l1 = l1,
+                l2 = l2,
+                NOE = NOE,
+                action = 0 //chưa gán action sau khi run mới có action
+            });
 
             //show reward trước train và q value
             _loggerQlearningRun.LogInformation($"Reward:\n{problem.ShowReward()}");
             //_loggerQlearningRun.LogInformation($"QTable:\n{qLearning.ShowQTable()}");
-            qLearning.TrainAgent(200);
             _loggerQlearningRun.LogInformation($"QTable sau train:\n{qLearning.ShowQTable()}");
+
+            _loggerQlearningRun.LogInformation($"r/R: {numSuccess}/{numRequest} = {numSuccess / (double)numRequest}");
 
             var newAction = 0;
             try
             {
                 //chạy chọn ra action từ state chỉ định
                 newAction = qLearning.Run(initialState);
+                if (violateRead)
+                {
+                    _loggerQlearningRun.LogWarning($"Violate Read, Client metric: {l2}, oldR: {r}, newR: {r - 1}");
+                    newAction = 5;
+                }
+                if (violateWrite)
+                {
+                    _loggerQlearningRun.LogWarning($"Violate Write, Stale metric: {l1}, oldW: {w}, newW: {w - 1}");
+                    newAction = 4;
+                }
+                logState[^1].action = newAction; //gán action lựa chọn là gì
+
                 _loggerQlearningRun.LogInformation($"from state {initialState} new action: {newAction}");
                 int newR = r;
                 int newW = w;

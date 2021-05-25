@@ -97,6 +97,14 @@ namespace KcsWriteLog.Controllers
             public string TargetIp { get; set; }
             public DateTime Start { get; set; }
             public DateTime End { get; set; }
+            [Required]
+            public long? VStalenessMax { get; set; }
+            [Required]
+            public long? VStalenessMin { get; set; }
+            [Required]
+            public double? VStalenessAvg { get; set; }
+            [Required]
+            public long? TStaleness { get; set; }
             public bool IsVersionSuccess { get; set; }
         }
 
@@ -112,6 +120,10 @@ namespace KcsWriteLog.Controllers
                     StaleMetric = TimeSpan.Zero,
                     Overhead = 0,
                     Time = DateTime.Now,
+                    VstalenessMax = logRead.VStalenessMax,
+                    VstalenessMin = logRead.VStalenessMin,
+                    VstalenessAvg = logRead.VStalenessAvg,
+                    TstalenessAvg = logRead.TStaleness,
                     IsVersionSuccess = logRead.IsVersionSuccess
                 };
                 _context.DataTrainings.Add(log);

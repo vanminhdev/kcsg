@@ -14,14 +14,21 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 
+import org.checkerframework.checker.units.qual.min;
 import org.eclipse.jdt.annotation.NonNull;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -29,6 +36,7 @@ import org.json.JSONObject;
 
 import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.mdsal.binding.api.DataObjectModification;
+import org.opendaylight.mdsal.binding.api.DataObjectModification.ModificationType;
 import org.opendaylight.mdsal.binding.api.DataTreeChangeListener;
 import org.opendaylight.mdsal.binding.api.DataTreeIdentifier;
 import org.opendaylight.mdsal.binding.api.DataTreeModification;
@@ -46,6 +54,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.GetVersionsInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.GetVersionsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.GetVersionsOutputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.ResetVersionsInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.ResetVersionsOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.ResetVersionsOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.SinaService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.TestPingInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sina.rev200908.TestPingOutput;
@@ -124,30 +135,118 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
 
     private void onDataChanged(DataTreeModification<Node> change) {
         final DataObjectModification<Node> node = change.getRootNode();
-        switch (node.getModificationType()) {
-            case DELETE:
-                LOG.info(MSG, "********************** Node Remove ***************");
-                LOG.info(MSG, "NETCONF Node was removed: " + node.getIdentifier());
-                //logChange("DELETE", requestGet());
-                break;
-            case SUBTREE_MODIFIED:
-                // LOG.info(MSG, "****************** Node Modify ***************");
-                // LOG.info(MSG, "NETCONF Node was updated: " + node.getIdentifier());
-                // //logChange("SUBTREE_MODIFIED", requestGet());
-                break;
-            case WRITE:
-                LOG.info(MSG, "********************* Node Add ************************");
-                LOG.info(MSG, "NETCONF Node was created: " + node.getIdentifier());
-                //logChange("WRITE", requestGet());
-                break;
-            default:
-                throw new IllegalStateException("Unhandled node change" + change);
+        if (node.getModificationType() == ModificationType.DELETE) {
+            //LOG.info(MSG, "********************** Node Remove ***************");
+            //LOG.info(MSG, "NETCONF Node was removed: " + node.getIdentifier());
+            handleOnDataChanged();
+        } else if (node.getModificationType() == ModificationType.SUBTREE_MODIFIED) {
+            LOG.info(MSG, "****************** Node Modify ***************");
+            LOG.info(MSG, "NETCONF Node was updated: " + node.getIdentifier());
+            handleOnDataChanged();
+        } else if (node.getModificationType() == ModificationType.WRITE) {
+            //LOG.info(MSG, "********************* Node Add ************************");
+            //LOG.info(MSG, "NETCONF Node was created: " + node.getIdentifier());
+            handleOnDataChanged();
+        }
+    }
+
+    private void writeNodeState(String str) {
+        String path = INIT_PATH;
+        OutputStreamWriter outputStreamWriter = null;
+        BufferedWriter bufferWriter = null;
+        try {
+            outputStreamWriter = new OutputStreamWriter(
+                new FileOutputStream(path + "/nodeState.txt", false),
+                StandardCharsets.UTF_8
+            );
+            bufferWriter = new BufferedWriter(outputStreamWriter);
+            bufferWriter.write(str);
+        } catch (IOException e) {
+            LOG.error(MSG, "write node state error");
+        } finally {
+            try {
+                if (bufferWriter != null) {
+                    bufferWriter.close();
+                }
+                if (outputStreamWriter != null) {
+                    outputStreamWriter.close();
+                }
+            } catch (IOException e) {
+                LOG.error(MSG, e.getMessage());
+            }
+        }
+    }
+
+    private String readNodeState() {
+        String path = INIT_PATH;
+        String str = "";
+        InputStreamReader inputStreamReader = null;
+        BufferedReader buffReader = null;
+        try {
+            inputStreamReader = new InputStreamReader(
+                new FileInputStream(path + "/nodeState.txt"), StandardCharsets.UTF_8
+            );
+            buffReader = new BufferedReader(inputStreamReader);
+            String line;
+
+            while ((line = buffReader.readLine()) != null) {
+                return line;
+            }
+        } catch (IOException e) {
+            LOG.error(MSG, "read node state error");
+        } finally {
+            try {
+                if (buffReader != null) {
+                    buffReader.close();
+                }
+                if (inputStreamReader != null) {
+                    inputStreamReader.close();
+                }
+            } catch (IOException e) {
+                LOG.error(MSG, e.getMessage());
+            }
+        }
+        return str;
+    }
+
+    private void handleOnDataChanged() {
+        HashMap<String, Boolean> nodeLinkDowns = new HashMap<>();
+        try {
+            String url = "http://localhost:8181/restconf/operational/opendaylight-inventory:nodes";
+            HttpResponse<String> response;
+            response = Unirest.get(url).header("Accept", "application/json")
+                    .header("Authorization", "Basic YWRtaW46YWRtaW4=").asString();
+            JSONObject root = new JSONObject(response.getBody());
+            LOG.info(MSG,"len: " + response.getBody().getBytes(StandardCharsets.UTF_8).length);
+            JSONArray nodes = (root.getJSONObject("nodes")).getJSONArray("node");
+            for (int i = 0; i < nodes.length(); i++) {
+                JSONArray nodeConnector = nodes.getJSONObject(i).getJSONArray("node-connector");
+                for (int j = 0; j < nodeConnector.length(); j++) {
+                    JSONObject nodeConnect = nodeConnector.getJSONObject(j);
+                    String name = nodeConnect.getString("flow-node-inventory:name");
+                    JSONObject state = nodeConnect.getJSONObject("flow-node-inventory:state");
+                    boolean linkDown = state.getBoolean("link-down");
+                    nodeLinkDowns.put(name, linkDown);
+                }
+            }
+            JSONObject result = new JSONObject(nodeLinkDowns);
+            String newNodeState = result.toString();
+            String nodeState = readNodeState();
+            if (nodeState != null && !nodeState.equals(newNodeState)) {
+                LOG.info(MSG,"old: " + nodeState);
+                LOG.info(MSG,"new: " + newNodeState);
+                writeLogChange();
+                writeNodeState(result.toString());
+            }
+        } catch (UnirestException e) {
+            LOG.error(MSG, e.getMessage());
+        } catch (JSONException e) {
+            LOG.error(MSG, e.getMessage());
         }
     }
 
     @Override
     public void onInitialData() {
-
     }
 
     @SuppressWarnings(value = { "UPM_UNCALLED_PRIVATE_METHOD" })
@@ -250,24 +349,10 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         LOG.info(MSG, "myIp :" + myIpAddress + " serverUrl: " + SERVER_URL);
     }
 
-    @SuppressWarnings(value = { "IP_PARAMETER_IS_DEAD_BUT_OVERWRITTEN", "UPM_UNCALLED_PRIVATE_METHOD" })
-    @SuppressFBWarnings(value = { "IP_PARAMETER_IS_DEAD_BUT_OVERWRITTEN", "UPM_UNCALLED_PRIVATE_METHOD" })
-    private void logChange(String eventType, String data) {
-        //data = ""; //test reset
-        String strJson = "{\"id\":\"" + java.util.UUID.randomUUID() + "\"," + "\"eventType\":\"" + eventType + "\","
-            + "\"time\":\"" + java.time.LocalDateTime.now() + "\"," + "\"data\":" + data + "}\n";
-        writeLogChange(strJson);
-    }
-
-    private void writeLogChange(String strLog) {
+    private void writeLogChange() {
         LOG.info(MSG, "write a log change");
         int ver = HandleVersion.getVersion(myIpAddress);
         HandleVersion.setVersion(myIpAddress, ++ver);
-
-        JSONObject bodyReq = new JSONObject();
-        bodyReq.put("ip", myIpAddress);
-        bodyReq.put("version", ver);
-        HandleCallServer.updateVersion(bodyReq);
         writeData(myIpAddress, ver);
     }
 
@@ -297,9 +382,12 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
             logDetail.put("end", java.time.LocalDateTime.now());
             log.put(logDetail);
         }
+        JSONObject bodyReq = new JSONObject();
+        bodyReq.put("ip", myIpAddress);
+        bodyReq.put("version", version);
+        HandleCallServer.updateVersion(bodyReq);
         HandleCallServer.sendLogWrite(log);
     }
-
 
     @SuppressWarnings(value = { "DM_DEFAULT_ENCODING" })
     @SuppressFBWarnings(value = { "DM_DEFAULT_ENCODING" })
@@ -528,7 +616,6 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
     }
     */
 
-
     @Override
     public ListenableFuture<RpcResult<GetVersionOutput>> getVersion(GetVersionInput input) {
         JSONObject jsonObject = new JSONObject(input.getData());
@@ -559,33 +646,45 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         return RpcResultBuilder.success(builder.build()).buildFuture();
     }
 
+    @Override
+    public ListenableFuture<RpcResult<ResetVersionsOutput>> resetVersions(ResetVersionsInput input) {
+        HandleVersion.resetVersions();
+        ResetVersionsOutputBuilder builder = new ResetVersionsOutputBuilder();
+        return RpcResultBuilder.success(builder.build()).buildFuture();
+    }
+
     @SuppressWarnings(value = { "UPM_UNCALLED_PRIVATE_METHOD" })
     @SuppressFBWarnings(value = { "UPM_UNCALLED_PRIVATE_METHOD" })
     private JSONObject readDataTestPing() {
+        //doc version tu server truoc
+        JSONArray verFromServer = HandleCallServer.getVersionsFromServer();
+        LOG.info(MSG, "version from server " + verFromServer);
+        if (verFromServer == null) {
+            return null;
+        }
+
+        //doc version tu r controller khac
         ConfigRWModel config = HandleCallServer.getRWConfig();
         ArrayList<InforControllerModel> controllers = HandleVersion.getRandomMembers(config.getR() - 1);
 
+        JSONObject logDetail = new JSONObject();
+        logDetail.put("targetIp", myIpAddress);
+        logDetail.put("start", java.time.LocalDateTime.now());
         JSONArray allVersion = new JSONArray();
         for (InforControllerModel dstController : controllers) {
             JSONObject getVer = handleReadTestPing(dstController);
             if (getVer != null) {
                 allVersion.put(getVer);
             }
+            else {
+                LOG.error(MSG, "get ver test ping from " + dstController.getIp()
+                    + " type: " + dstController.getKindController());
+            }
         }
+        //them ver cua controller nay
         allVersion.put(new JSONObject(HandleVersion.getVersions()));
-
         LOG.info(MSG, "all version " + allVersion.toString());
 
-        JSONObject logDetail = new JSONObject();
-        logDetail.put("targetIp", myIpAddress);
-        logDetail.put("start", java.time.LocalDateTime.now());
-        JSONArray verFromServer = HandleCallServer.getVersionsFromServer();
-
-        LOG.info(MSG, "version from server " + verFromServer);
-
-        if (verFromServer == null) {
-            return null;
-        }
         boolean checkAllSuccess = true;
         for (int i = 0; i < verFromServer.length(); i++) {
             boolean checkSuccess = false;
@@ -595,12 +694,14 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
             for (int j = 0; j < allVersion.length(); j++) {
                 JSONObject currJson = allVersion.getJSONObject(j);
                 try {
-                    if (currJson.getInt(ip) == version) {
+                    //neu version tu r controller khac >= version tu server thi la dung
+                    JSONObject versionDetail = currJson.getJSONObject(ip);
+                    if (versionDetail.getInt("version") >= version) {
                         checkSuccess = true;
                         break;
                     }
                 } catch (JSONException e) {
-                    LOG.error(MSG, "error currJson");
+                    LOG.error(MSG, "error read version cua ip: " + ip);
                 }
             }
 
@@ -611,6 +712,61 @@ public class SinaProvider implements SinaService, DataTreeChangeListener<Node> {
         }
         logDetail.put("end", java.time.LocalDateTime.now());
         logDetail.put("isVersionSuccess", checkAllSuccess);
+
+        ArrayList<Long> listTStaleness = new ArrayList<>();
+        ArrayList<Integer> listVStaleness = new ArrayList<>();
+        //tinh v staleness va tinh t staleness
+        for (int i = 0; i < verFromServer.length(); i++) {
+            String ip = verFromServer.getJSONObject(i).getString("ip");
+            int version = verFromServer.getJSONObject(i).getInt("version");
+
+            long maxTime = 0;
+            int minSubVer = 9999; //max hieu ver tu server va tu cac controller cho moi ip
+            for (int j = 0; j < allVersion.length(); j++) {
+                JSONObject currJson = allVersion.getJSONObject(j);
+                try {
+                    JSONObject versionDetail = currJson.getJSONObject(ip);
+                    int subVer = version - versionDetail.getInt("version");
+                    if (subVer < minSubVer && subVer >= 0) {
+                        minSubVer = subVer;
+                    }
+                    long timeSet = versionDetail.getLong("timeSet");
+                    if (timeSet > maxTime) {
+                        maxTime = timeSet;
+                    }
+                } catch (JSONException e) {
+                    LOG.error(MSG, "error read version cua ip: " + ip);
+                }
+            }
+            listVStaleness.add(minSubVer);
+            listTStaleness.add(maxTime);
+        }
+
+        int max = 0;
+        int min = 0;
+        float avg = 0;
+        if (listVStaleness.size() > 0) {
+            max = Collections.max(listVStaleness);
+            min = Collections.min(listVStaleness);
+            int sum = 0;
+            for (Integer mark : listVStaleness) {
+                sum += mark;
+            }
+            avg = (float)sum / listVStaleness.size();
+        }
+
+        long timeRead = System.currentTimeMillis();
+        long tstaleness = 0;
+        if (listTStaleness.size() > 0) {
+            long maxTimeSet = Collections.max(listTStaleness);
+            tstaleness = timeRead - maxTimeSet;
+        }
+
+        logDetail.put("vStalenessMax", max);
+        logDetail.put("vStalenessMin", min);
+        logDetail.put("vStalenessAvg", avg);
+
+        logDetail.put("tStaleness", tstaleness);
 
         LOG.info(MSG, logDetail);
         return logDetail;

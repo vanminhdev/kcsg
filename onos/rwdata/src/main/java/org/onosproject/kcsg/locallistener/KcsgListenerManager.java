@@ -254,10 +254,6 @@ public class KcsgListenerManager {
         int ver = HandleVersion.getVersion(myIpAddress);
         HandleVersion.setVersion(myIpAddress, ++ver);
 
-        JSONObject bodyReq = new JSONObject();
-        bodyReq.put("ip", myIpAddress);
-        bodyReq.put("version", ver);
-        HandleCallServer.updateVersion(bodyReq);
         writeData(myIpAddress, ver);
     }
 
@@ -287,6 +283,10 @@ public class KcsgListenerManager {
             logDetail.put("end", java.time.LocalDateTime.now());
             log.put(logDetail);
         }
+        JSONObject bodyReq = new JSONObject();
+        bodyReq.put("ip", myIpAddress);
+        bodyReq.put("version", version);
+        HandleCallServer.updateVersion(bodyReq);
         HandleCallServer.sendLogWrite(log);
     }
 

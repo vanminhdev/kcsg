@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 
 #nullable disable
 
-namespace KcsWriteLog.Models
+namespace ThongKe.Models
 {
     public partial class KCS_DATAContext : DbContext
     {
@@ -115,20 +115,6 @@ namespace KcsWriteLog.Models
                 entity.Property(e => e.VstalenessMax).HasColumnName("VStalenessMax");
 
                 entity.Property(e => e.VstalenessMin).HasColumnName("VStalenessMin");
-            });
-
-            modelBuilder.Entity<LogLatencyRead>(entity =>
-            {
-                entity.ToTable("LogLatencyRead");
-
-                entity.Property(e => e.TimeRun).HasColumnType("datetime");
-            });
-
-            modelBuilder.Entity<LogLatencyWrite>(entity =>
-            {
-                entity.ToTable("LogLatencyWrite");
-
-                entity.Property(e => e.TimeRun).HasColumnType("datetime");
             });
 
             modelBuilder.Entity<LogLatencyRead>(entity =>

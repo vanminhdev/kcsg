@@ -24,7 +24,7 @@ namespace QLearningProject.MachineLearning
         public double[][] QTable { get => _qTable; }
 
         private IQLearningProblem _qLearningProblem;
-        private LogState[] _logState;
+        private List<LogState> _logState;
 
         private Queue<double> _logCSC;
 
@@ -39,7 +39,7 @@ namespace QLearningProject.MachineLearning
         /// </summary>
         public QLearningVegas(ILogger<QLearningVegas> loggerQlearning, double gamma, double epsilon, double alpha, IQLearningProblem qLearningProblem,
             int numSuccessForAction, int numRequestForAction,
-            double[][] oldQTable, LogState[] logState, Queue<double> logCSC, int numCtrl)
+            double[][] oldQTable, List<LogState> logState, Queue<double> logCSC, int numCtrl)
         {
             _loggerQlearning = loggerQlearning;
             _qLearningProblem = qLearningProblem;
@@ -116,18 +116,18 @@ namespace QLearningProject.MachineLearning
                     _logCSC.Dequeue();
                 }
 
-                var diff = _numCtrl * ((1 - CSC) / CSCBase);
-                if (diff <= 0.5)
+                var diff = _numCtrl * (1 - CSC / CSCBase);
+                if (diff <= 2)
                 {
-                    action = _random.Next(0, 2);
+                    action = _random.Next(4, 6);
                 }
-                else if (diff > 0.5 && diff < 1)
+                else if (diff > 2 && diff <= 9)
                 {
                     action = _random.Next(2, 4);
                 }
                 else //
                 {
-                    action = _random.Next(4, 6);
+                    action = _random.Next(0, 2);
                 }
             }
             else
@@ -136,6 +136,15 @@ namespace QLearningProject.MachineLearning
                 action = _qTable[currentState].ToList().IndexOf(qValueMax);
             }
             return action;
+        }
+
+        public void UpdateQTable(int currentState, int lastState, int lastAction, double reward)
+        {
+            double maxQValue = _qTable[currentState].Max();
+            //tính ra value mới
+            double qLastState = _qTable[lastState][lastAction] + _alpha * (reward + _gamma * maxQValue - _qTable[lastState][lastAction]);
+            //cập nhật vào q table
+            _qTable[lastState][lastAction] = qLastState;
         }
 
         /// <summary>
@@ -174,19 +183,19 @@ namespace QLearningProject.MachineLearning
         }
 
         /// <summary>
-        /// Random ra state để train
+        /// Random ra state để train, danh sách state là những state đã từng xảy ra trong quá khứ + 1 state vừa xảy ra
         /// </summary>
         /// <param name="numberOfStates">Số state</param>
         /// <returns></returns>
         private int RandomInitialState()
         {
-            if (_logState.Length > 0)
+            if (_logState.Count > 0)
             {
-                int index = _random.Next(0, _logState.Length);
+                int index = _random.Next(0, _logState.Count);
                 var state = _logState[index];
                 return _qLearningProblem.GetState(state.l1, state.l2, state.NOE);
             }
-            return _random.Next(0, _qLearningProblem.NumberOfStates);
+            return 0;
         }
 
         /// <summary>

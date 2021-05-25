@@ -46,7 +46,7 @@ namespace KcsWriteLog.Services.HostedService
 
             try
             {
-                var ranTF = random.NextDouble() > 0.09;
+                var ranTF = random.NextDouble() > 0.09; //sx thành công
 
                 var config = _context.Configs.OrderByDescending(o => o.Time).FirstOrDefault();
                 //if (config.W < 4)

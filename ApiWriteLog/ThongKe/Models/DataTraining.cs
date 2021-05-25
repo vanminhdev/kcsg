@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 #nullable disable
 
-namespace KcsWriteLog.Models
+namespace ThongKe.Models
 {
     public partial class DataTraining
     {

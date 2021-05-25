@@ -4,7 +4,7 @@ import os
 import pathlib
 from datetime import datetime
 import random
-
+import time
 import requests
 
 from faucet.HandleCallServer import HandleCallServer
@@ -112,7 +112,7 @@ class Kcs:
 
         for new_version in new_version_list:
             ip = new_version['ip']
-            versions[ip] = new_version['version']
+            versions[ip] = {"version": new_version['version'], "timeSet": int(round(time.time() * 1000))}
 
         with open(Kcs.file_path['version'], 'w+') as outfile:
             json.dump(versions, outfile)
@@ -131,6 +131,7 @@ class Kcs:
             local_ver += 1
             Kcs.update_version_file([{'ip': Kcs.local_ip, 'version': local_ver}])
             Kcs.write_data(Kcs.local_ip, local_ver)
+            HandleCallServer.update_version(Kcs.local_ip, local_ver)
         except Exception as e:
             logging.error(e)
 
@@ -139,7 +140,7 @@ class Kcs:
         if os.path.isfile(Kcs.file_path['version']):
             with open(Kcs.file_path['version'], 'r') as f:
                 versions = json.load(f)
-            return versions[ip] if ip in versions else 0
+            return versions[ip]["version"] if ip in versions else 0
         return 0
 
     # lay toan bo version
@@ -152,13 +153,29 @@ class Kcs:
         return {}
 
     @staticmethod
+    def reset_versions():
+        versions = {}
+        if os.path.isfile(Kcs.file_path['version']):
+            f = open(Kcs.file_path['version'], 'r')
+            versions = json.load(f)
+            f.close()
+
+        for key in versions.keys():
+            versions[key] = {"version": 0, "timeSet": int(round(time.time() * 1000))}
+
+        print("reset version: ", versions)
+
+        with open(Kcs.file_path['version'], 'w+') as outfile:
+            json.dump(versions, outfile)
+
+    @staticmethod
     def set_version(ip, version):
         versions = {}
         if os.path.isfile(Kcs.file_path['version']):
             with open(Kcs.file_path['version'], 'r') as f:
                 versions = json.load(f)
 
-        versions[ip] = version
+        versions[ip] = {"version": version, "timeSet": int(round(time.time() * 1000))}
         with open(Kcs.file_path['version'], 'w+') as outfile:
             json.dump(versions, outfile)
 
@@ -194,7 +211,7 @@ class Kcs:
         controllers = Kcs.get_all_controller()
         versions = {}
         for c in controllers:
-            versions[c["ip"]] = 0
+            versions[c["ip"]] = {"version": 0, "timeSet": int(round(time.time() * 1000))}
         with open(Kcs.file_path['version'], 'w+') as f:
             f.write(json.dumps(versions))
 
@@ -258,10 +275,7 @@ class Kcs:
                 print('send_data: ' + send_data)
 
                 r = requests.post(url=api, data=send_data, headers=headers)
-                print('r.text: ' + r.text)
-                res = json.loads(r.text)
-                print(res)
-
+                print('write status code: ' + str(r.status_code))
                 return len(bytes(send_data))
             elif kind_dst == kinds['ONOS']:
                 api = 'http://' + ip_dst + ':8181/onos/rwdata/communicate/update-version'
@@ -271,10 +285,10 @@ class Kcs:
                 print(send_data)
 
                 r = requests.post(url=api, data=send_data, headers=headers)
-                res = json.loads(r.text)
-                print(res)
+                print('write status code: ' + str(r.status_code))
                 return len(bytes(send_data))
             elif kind_dst == kinds['ODL']:
+                headers["Authorization"] = "Basic YWRtaW46YWRtaW4="
                 api = 'http://' + ip_dst + ':8181/restconf/operations/sina:updateVersion'
                 print(api)
                 data = {"input": {"data": json.dumps({"ip": ip, "version": version})}}
@@ -282,8 +296,7 @@ class Kcs:
                 print(send_data)
 
                 r = requests.post(url=api, data=send_data, headers=headers)
-                res = json.loads(r.text)
-                print(res)
+                print('write status code: ' + str(r.status_code))
                 return len(bytes(send_data))
         except Exception as e:
             logging.error(e)
@@ -384,7 +397,7 @@ class Kcs:
     def read_data_test_ping():
         config = HandleCallServer.get_rw_config()
         controllers = Kcs.get_random_members(config["r"])
-
+        #read version tu server truoc
         versions_from_server = HandleCallServer.get_versions_from_server()
         print('versions_from_server ', versions_from_server)
         all_version = []
@@ -396,7 +409,6 @@ class Kcs:
             version = Kcs.handle_read_data_test_ping(c["ip"], c["kind"])
             all_version.append(version)
         log_detail["end"] = datetime.now().isoformat()
-
         print("all version ", all_version)
 
         check_all_success = True
@@ -406,15 +418,56 @@ class Kcs:
             ver = ver_fr_server["version"]
             for vers_in_all in all_version:
                 try:
-                    if vers_in_all[ip] == ver:
+                    detail_version = vers_in_all[ip]
+                    if detail_version["version"] >= ver:
                         check_success = True
                         break
                 except:
-                    print("cannot get ver of ip ", ver_fr_server["ip"])
+                    print("error read version cua ip ", ver_fr_server["ip"])
 
             if not check_success:
                 check_all_success = False
         log_detail["isVersionSuccess"] = check_all_success
+
+        list_vstaleness = []
+        list_tstaleness = []
+        for ver_fr_server in versions_from_server:
+            ip = ver_fr_server["ip"]
+            ver = ver_fr_server["version"]
+
+            max_time = 0 #lay thoi gian cap nhat cuoi
+            min_subver = 9999 #lay sai khac nho nhat
+            for vers_in_all in all_version:
+                try:
+                    detail_version = vers_in_all[ip]
+                    sub_ver = ver - detail_version["version"]
+                    time_set = detail_version["timeSet"]
+                    if sub_ver < min_subver and sub_ver >= 0:
+                        min_subver = sub_ver
+                    if time_set > max_time:
+                        max_time = time_set
+                except:
+                    print("error read version cua ip ", ver_fr_server["ip"])
+            list_vstaleness.append(min_subver)
+            list_tstaleness.append(max_time)
+
+        vstaleness_max = 0
+        vstaleness_min = 0
+        vstaleness_avg = 0
+        if len(list_vstaleness) > 0:
+            vstaleness_max = max(list_vstaleness)
+            vstaleness_min = min(list_vstaleness)
+            vstaleness_avg = sum(list_vstaleness) / len(list_vstaleness)
+
+        log_detail["vStalenessMax"] = vstaleness_max
+        log_detail["vStalenessMin"] = vstaleness_min
+        log_detail["vStalenessAvg"] = vstaleness_avg
+
+        time_read = int(round(time.time() * 1000))
+        tstaleness = 0
+        if len(list_tstaleness) > 0:
+            tstaleness = time_read - max(list_tstaleness)
+        log_detail["tStaleness"] = tstaleness
         return log_detail
 
     @staticmethod

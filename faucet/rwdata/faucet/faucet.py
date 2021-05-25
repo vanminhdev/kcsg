@@ -384,8 +384,6 @@ class Faucet(RyuAppBase):
             print('PORT EVENT')
 
             Kcs.write_local_log(api_path='http://localhost:8080/faucet/sina/getportmac', event_type='port_mac')
-            Kcs.write_local_log(api_path='http://localhost:8080/faucet/sina/getportmac', event_type='l2_port')
-
             self.logger.info("************************** port change ***********************")
         except Exception as e:
             self.logger.error(e)
@@ -405,10 +403,7 @@ class Faucet(RyuAppBase):
             # self.write_action_log()
 
             print('SWITCH EVENT')
-
             Kcs.write_local_log(api_path='http://localhost:8080/faucet/sina/getportmac', event_type='port_mac')
-            Kcs.write_local_log(api_path='http://localhost:8080/faucet/sina/getportmac', event_type='l2_port')
-
         except Exception as e:
             self.logger.error(e)
 
@@ -428,7 +423,7 @@ class Faucet(RyuAppBase):
     def scanner(self):
         print('read data...')
         Kcs.read_data()
-        Timer(5, self.scanner).start()
+        #Timer(5, self.scanner).start()
 
 
 url = "/faucet/sina"
@@ -493,6 +488,11 @@ class SinaApiSample(ControllerBase):
     def get_versions(self, req):
         versions = Kcs.get_versions()
         return json.dumps(versions)
+
+    @route("reset_versions", url + '/versions/reset-versions', methods=['PUT'])
+    def reset_versions(self, req):
+        Kcs.reset_versions()
+        return ""
 
     @route("test_ping", url + '/communicate/test-ping', methods=['POST'])
     def test_ping(self, req):
