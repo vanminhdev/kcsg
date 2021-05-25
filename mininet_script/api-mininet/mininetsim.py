@@ -49,6 +49,8 @@ for edge in edges:
 
 net.addController("c0", controller=RemoteController, ip='192.168.31.132', port=6653)
 
+net.build()
+
 net.start()
 CLI(net)
 net.stop()
