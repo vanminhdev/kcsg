@@ -36,6 +36,9 @@ namespace QLearningProject.MachineLearning
         }
     }
 
+    /// <summary>
+    /// Tính q table, chọn action ở đây
+    /// </summary>
     public class QLearning
     {
         #region Các thuộc tính
@@ -60,29 +63,17 @@ namespace QLearningProject.MachineLearning
 
 
         private IQLearningProblem _qLearningProblem;
-        private List<LogState> _logState;
 
-        private int numSuccessForAction;
-        private int numRequestForAction;
+        private int numSuccess;
+        private int numRequest;
         #endregion
 
         /// <summary>
         /// Chạy q learning với đầu vào là qtable cũ để tính qtable mới
         /// </summary>
-        /// <param name="loggerQlearning"></param>
-        /// <param name="gamma"></param>
-        /// <param name="epsilon"></param>
-        /// <param name="alpha"></param>
-        /// <param name="qLearningProblem"></param>
-        /// <param name="numSuccessForAction"></param>
-        /// <param name="numRequestForAction"></param>
-        /// <param name="oldQTable"></param>
-        /// <param name="logState"></param>
-        /// <param name="t"></param>
-        /// <param name="nPull"></param>
         public QLearning(ILogger<QLearning> loggerQlearning, double gamma, double epsilon, double alpha, IQLearningProblem qLearningProblem,
-            int numSuccessForAction, int numRequestForAction,
-            double[][] oldQTable, List<LogState> logState, int t, Dictionary<StateAndAction, int> nPull)
+            int numSuccess, int numRequest,
+            double[][] oldQTable, int t, Dictionary<StateAndAction, int> nPull)
         {
             _loggerQlearning = loggerQlearning;
             _qLearningProblem = qLearningProblem;
@@ -91,7 +82,8 @@ namespace QLearningProject.MachineLearning
                 _qTable = new double[_qLearningProblem.NumberOfStates][];
                 for (int i = 0; i < _qLearningProblem.NumberOfStates; i++)
                 {
-                    _qTable[i] = new double[] { 0, 0, 0, 0, 0, 0 };
+
+                    _qTable[i] = new double[] { 0, 0, 0, 0, 0, 0, 0 };
                 }
             }
             else
@@ -101,7 +93,6 @@ namespace QLearningProject.MachineLearning
             _gamma = gamma;
             _epsilon = epsilon;
             _alpha = alpha;
-            _logState = logState;
 
             if (t <= 0)
             {
@@ -120,25 +111,8 @@ namespace QLearningProject.MachineLearning
             {
                 _nPull = nPull;
             }
-            this.numSuccessForAction = numSuccessForAction;
-            this.numRequestForAction = numRequestForAction;
-        }
-
-
-        /// <summary>
-        /// Bắt đầu training, khơi tạo init sate bằng cách random state trong tập state đã biết
-        /// sau đó tính q value
-        /// </summary>
-        /// <param name="numberOfIterations"></param>
-        public void TrainAgent(int numberOfIterations)
-        {
-            for (int i = 0; i < numberOfIterations; i++)
-            {
-                //lấy init state là một random trong các state đã từng có trong quá khứ
-                int initialState = RandomInitialState();
-                //tính value cho q table
-                CaculateQTable(initialState);
-            }
+            this.numSuccess = numSuccess;
+            this.numRequest = numRequest;
         }
 
         /// <summary>
@@ -167,8 +141,8 @@ namespace QLearningProject.MachineLearning
             int action;
             if (n < _epsilon)
             {
-                var div = numSuccessForAction / (double)numRequestForAction;
-                action = _random.Next(0, 6);
+                var div = numSuccess / (double)numRequest;
+                action = _random.Next(0, _qLearningProblem.NumberOfActions);
                 //if (div <= 0.5)
                 //{
                 //    action = _random.Next(0, 2);
@@ -185,7 +159,7 @@ namespace QLearningProject.MachineLearning
             else
             {
                 var qValueMax = _qTable[currentState].Max();
-                var maxIndexes = Enumerable.Range(0, 6)
+                var maxIndexes = Enumerable.Range(0, _qLearningProblem.NumberOfActions)
                 .Where(i => _qTable[currentState][i] == qValueMax)
                 .ToList();
                 action = maxIndexes[_random.Next(0, maxIndexes.Count())];
@@ -299,69 +273,96 @@ namespace QLearningProject.MachineLearning
             _qTable[initState][5] = 0;
         }
 
+        #region code cũ
+        /// <summary>
+        /// Bắt đầu training, khơi tạo init sate bằng cách random state trong tập state đã biết
+        /// sau đó tính q value
+        /// </summary>
+        /// <param name="numberOfIterations"></param>
+        //public void TrainAgent(int numberOfIterations)
+        //{
+        //    for (int i = 0; i < numberOfIterations; i++)
+        //    {
+        //        //lấy init state là một random trong các state đã từng có trong quá khứ
+        //        int initialState = RandomInitialState();
+        //        //tính value cho q table
+        //        CaculateQTable(initialState);
+        //    }
+        //}
+
         /// <summary>
         /// Tính value cho q table
         /// </summary>
         /// <param name="initialState">trạng thái khởi tạo</param>
-        private void CaculateQTable(int initialState)
-        {
-            int currentState = initialState;
-            for (int i = 0; i < 6; i++)
-            {
-                TakeAction(currentState);
-            }
-        }
+        //private void CaculateQTable(int initialState)
+        //{
+        //    int currentState = initialState;
+        //    for (int i = 0; i < 6; i++)
+        //    {
+        //        TakeAction(currentState);
+        //    }
+        //}
 
         /// <summary>
         /// Lấy ra action theo quy tắc và tính q value
         /// </summary>
         /// <param name="currentState">trạng thái đang xét</param>
-        private void TakeAction(int currentState)
-        {
-            #region select action dựa theo q value max hoặc theo r/R
-            int action = SelectAction(currentState);
-            //int action = UCBSelectAction(_t, currentState);
-            //int action = SoftMaxSelectAction(currentState);
-            #endregion
+        //private void TakeAction(int currentState)
+        //{
+        //    #region select action dựa theo q value max hoặc theo r/R
+        //    int action = SelectAction(currentState);
+        //    //int action = UCBSelectAction(_t, currentState);
+        //    //int action = SoftMaxSelectAction(currentState);
+        //    #endregion
 
-            #region lấy reward
-            //lấy ra giá trị reward tại s và a chỉ định
-            double saReward = _qLearningProblem.GetReward(currentState, action);
-            #endregion
+        //    #region lấy reward
+        //    //lấy ra giá trị reward tại s và a chỉ định
+        //    double saReward = _qLearningProblem.GetReward(currentState, action);
+        //    #endregion
 
-            #region tính q value
-            //lấy max đã có tại action đang xét
-            double maxQValue = _qTable[currentState].Max();
-            //tính ra value mới
-            double qCurrentState = _qTable[currentState][action] + _alpha * (saReward + _gamma * maxQValue - _qTable[currentState][action]);
-            //cập nhật vào q table tại s(curr) a(random)
-            _qTable[currentState][action] = qCurrentState;
-            #endregion
+        //    #region tính q value
+        //    //lấy max đã có tại action đang xét
+        //    double maxQValue = _qTable[currentState].Max();
+        //    //tính ra value mới
+        //    double qCurrentState = _qTable[currentState][action] + _alpha * (saReward + _gamma * maxQValue - _qTable[currentState][action]);
+        //    //cập nhật vào q table tại s(curr) a(random)
+        //    _qTable[currentState][action] = qCurrentState;
+        //    #endregion
 
-            #region tính q value theo ucb & soft max
-            //refer: https://github.com/SahanaRamnath/MultiArmedBandit_RL/tree/master/UCB
-            //tính q value cho ucb
-            //var sa = new StateAndAction { State = currentState, Action = action };
-            //double qCurrentStateNew = _qTable[currentState][action] + (saReward - _qTable[currentState][action]) / _nPull[sa];
-            //_qTable[currentState][action] = qCurrentStateNew;
-            #endregion
-        }
+        //    #region tính q value theo ucb & soft max
+        //    //refer: https://github.com/SahanaRamnath/MultiArmedBandit_RL/tree/master/UCB
+        //    //tính q value cho ucb
+        //    //var sa = new StateAndAction { State = currentState, Action = action };
+        //    //double qCurrentStateNew = _qTable[currentState][action] + (saReward - _qTable[currentState][action]) / _nPull[sa];
+        //    //_qTable[currentState][action] = qCurrentStateNew;
+        //    #endregion
+        //}
 
         /// <summary>
         /// Random ra state để train, danh sách state là những state đã từng xảy ra trong quá khứ + 1 state vừa xảy ra
         /// </summary>
         /// <param name="numberOfStates">Số state</param>
         /// <returns></returns>
-        private int RandomInitialState()
-        {
-            if (_logState.Count > 0)
-            {
-                int index = _random.Next(0, _logState.Count);
-                var state = _logState[index];
-                return _qLearningProblem.GetState(state.l1, state.l2, state.NOE);
-            }
-            return 0;
-        }
+        //private int RandomInitialState()
+        //{
+        //    if (_logState.Count > 0)
+        //    {
+        //        int index = _random.Next(0, _logState.Count);
+        //        var state = _logState[index];
+        //        return _qLearningProblem.GetState(state.l1, state.l2, state.VStalenessAvg);
+        //    }
+        //    return 0;
+        //}        //private int RandomInitialState()
+        //{
+        //    if (_logState.Count > 0)
+        //    {
+        //        int index = _random.Next(0, _logState.Count);
+        //        var state = _logState[index];
+        //        return _qLearningProblem.GetState(state.l1, state.l2, state.VStalenessAvg);
+        //    }
+        //    return 0;
+        //}
+        #endregion
 
         /// <summary>
         /// Show Q table
@@ -376,7 +377,7 @@ namespace QLearningProject.MachineLearning
                 {
                     if (_qTable[i][j] != 0)
                     {
-                        sb.Append($"{i}: {_qTable[i][0]} {_qTable[i][1]} {_qTable[i][2]} {_qTable[i][3]} {_qTable[i][4]} {_qTable[i][5]}\n");
+                        sb.Append($"{i}: {_qTable[i][0]} {_qTable[i][1]} {_qTable[i][2]} {_qTable[i][3]} {_qTable[i][4]} {_qTable[i][5]} {_qTable[i][6]}\n");
                         break;
                     }
                 }

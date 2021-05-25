@@ -11,12 +11,12 @@ namespace QLearningProject.Run.Models
     {
         public int l1 { get; set; }
         public int l2 { get; set; }
-        public int NOE { get; set; }
+        public int VStalenessAvg { get; set; }
         public int action { get; set; }
 
         public override string ToString()
         {
-            return "{" + $"l1:{l1}, l2:{l2}, NOE:{NOE}, action:{action}" + "}";
+            return "{" + $"l1:{l1}, l2:{l2}, VStalenessAvg:{VStalenessAvg}, action:{action}" + "}";
         }
     }
 }

@@ -157,33 +157,9 @@ namespace KcsWriteLog.Services.HostedService
             #region log ve bieu do
             var timeRun = DateTime.Now;
 
-            _context.LogQlearningReads.Add(new LogQlearningRead
-            {
-                NumViolations = logRead.Where(o => o.ClientMetric > TimeSpan.FromMilliseconds(thresholdRead)).Count(),
-                TimeRun = timeRun
-            });
-
-            _context.LogQlearningWrites.Add(new LogQlearningWrite
-            {
-                NumViolations = logWrite.Where(o => o.StaleMetric > TimeSpan.FromMilliseconds(thresholdWrite)).Count(),
-                TimeRun = timeRun
-            });
-
             _context.LogQlearningRatios.Add(new LogQlearningRatio
             {
                 Ratio = numSuccess / (double)numRequest,
-                TimeRun = timeRun
-            });
-
-            _context.LogLatencyReads.Add(new LogLatencyRead
-            {
-                Latency = LatencyReadAvg.TotalMilliseconds,
-                TimeRun = timeRun
-            });
-
-            _context.LogLatencyWrites.Add(new LogLatencyWrite
-            {
-                Latency = LatencyWriteAvg.TotalMilliseconds,
                 TimeRun = timeRun
             });
             #endregion

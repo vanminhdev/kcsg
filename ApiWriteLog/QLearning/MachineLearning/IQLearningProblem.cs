@@ -10,6 +10,6 @@ namespace QLearningProject.MachineLearning
         int NumberOfActions { get; }
         double GetReward(int currentState, int action);
         //bool GoalStateIsReached(int currentState);
-        int GetState(int L1, int L2, int NOE);
+        int GetState(int L1, int L2, int VStalenessAvg);
     }
 }

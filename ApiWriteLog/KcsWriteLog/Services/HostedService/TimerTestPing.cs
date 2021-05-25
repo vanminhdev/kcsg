@@ -65,7 +65,11 @@ namespace KcsWriteLog.Services.HostedService
                     StaleMetric = TimeSpan.Zero,
                     Overhead = 0,
                     Time = DateTime.Now,
-                    IsVersionSuccess = ranTF
+                    IsVersionSuccess = ranTF,
+                    VstalenessMax = random.Next(0, 3),
+                    VstalenessAvg = random.NextDouble(),
+                    VstalenessMin = 0,
+                    TstalenessAvg = random.Next(100, 300)
                 };
 
                 //fake log write

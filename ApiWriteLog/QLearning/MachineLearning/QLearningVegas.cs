@@ -193,7 +193,7 @@ namespace QLearningProject.MachineLearning
             {
                 int index = _random.Next(0, _logState.Count);
                 var state = _logState[index];
-                return _qLearningProblem.GetState(state.l1, state.l2, state.NOE);
+                return _qLearningProblem.GetState(state.l1, state.l2, state.VStalenessAvg);
             }
             return 0;
         }

@@ -31,6 +31,8 @@ namespace KcsWriteLog.Services.HostedService
 
         private List<LogState> _logState = new List<LogState>();
 
+        private DateTime timeCancel;
+
         public TimerQLearning(ILogger<TimerQLearning> logger, ILogger<QLearningRun> loggerQlearningRun, ILogger<QLearning> loggerQlearning, IServiceScopeFactory scopeFactory)
         {
             _loggerQlearningRun = logger;
@@ -44,23 +46,28 @@ namespace KcsWriteLog.Services.HostedService
             _timer = new Timer(DoWork, null, TimeSpan.Zero,
                 TimeSpan.FromSeconds(10));
             #region load qtable from db
-            //if (File.Exists(@"C:\Users\84389\Documents\sdn\jsonRewards.json") && File.Exists(@"C:\Users\84389\Documents\sdn\jsonQtable.json"))
-            //{
-            //    string jsonRewards = File.ReadAllText(@"C:\Users\84389\Documents\sdn\jsonRewards.json");
-            //    string jsonQtable = File.ReadAllText(@"C:\Users\84389\Documents\sdn\jsonQtable.json");
-            //    oldRewards = JsonSerializer.Deserialize<double[][]>(jsonRewards);
-            //    oldQTable = JsonSerializer.Deserialize<double[][]>(jsonQtable);
-            //}
-            //else
-            //{
-            //    _loggerQlearningRun.LogWarning("DB not have Qtable");
-            //}
+            if (File.Exists(@"C:\Users\84389\Documents\sdn\jsonQtable.json"))
+            {
+                string jsonQtable = File.ReadAllText(@"C:\Users\84389\Documents\sdn\jsonQtable.json");
+                oldQTable = JsonSerializer.Deserialize<double[][]>(jsonQtable);
+            }
+            else
+            {
+                _loggerQlearningRun.LogWarning("DB not have Qtable");
+            }
             #endregion
+
+            timeCancel = DateTime.Now.AddMinutes(200);
             return Task.CompletedTask;
         }
 
         private void DoWork(object state)
         {
+            if (DateTime.Now >= DateTime.Now.AddMinutes(200))
+            {
+                throw new Exception("stop");
+            }
+
             var scope = _scopeFactory.CreateScope();
             var _context = scope.ServiceProvider.GetRequiredService<KCS_DATAContext>();
 
@@ -106,8 +113,8 @@ namespace KcsWriteLog.Services.HostedService
             }
 
             #region latency
-            double thresholdRead = 20;
-            double thresholdWrite = 30;
+            double thresholdRead = QLearningRun.thresholdRead;
+            double thresholdWrite = QLearningRun.thresholdWrite;
 
             bool violateRead = false;
             bool violateWrite = false;
@@ -140,14 +147,38 @@ namespace KcsWriteLog.Services.HostedService
                 l2 = (int)(sum / logRead.Count()); //trung bình 1 request nhận được
             }
 
-            int NOE = logRead.Count(o => !o.IsVersionSuccess); //số lần đọc lỗi
+            //int NOE = logRead.Count(o => !o.IsVersionSuccess); //số lần đọc lỗi
 
-            _loggerQlearningRun.LogInformation($"l2, avgRead, l1, avgWrite, NOE, R, W = {l1}, {LatencyReadAvg}, {l2}, {LatencyWriteAvg}, {NOE}, {rwConfig.R}, {rwConfig.W}");
+            //v statleness trung bình của trung bình 10s
+            var listFilter = logRead.Where(o => o.VstalenessAvg <= 100).Select(o => o.VstalenessAvg.Value).ToList();
+            double VStalenessAvg = 0;
+            if (listFilter.Count > 0)
+            {
+                VStalenessAvg = listFilter.Average();
+            }
+            int VStalenessAvgInt = (int)Math.Round(VStalenessAvg);
+            if (VStalenessAvgInt > QLearningRun.thresholdVStaleness)
+                VStalenessAvgInt = (int)QLearningRun.thresholdVStaleness;
+
+            _loggerQlearningRun.LogInformation($"l2, avgRead, l1, avgWrite, VStalenessAvg, R, W = {l1}, {LatencyReadAvg}, {l2}, {LatencyWriteAvg}, {VStalenessAvg}, {rwConfig.R}, {rwConfig.W}");
+
+            if (l2 >= thresholdRead)
+            {
+                l2 = (int)thresholdRead;
+            }
+
+            if (l1 >= thresholdWrite)
+            {
+                l1 = (int)thresholdWrite;
+            }
+
+            _loggerQlearningRun.LogInformation($"avgRead, avgWrite, {LatencyReadAvg}, {LatencyWriteAvg}");
+
             int N = _context.ControllerIps.Where(o => o.IsActive != null && o.IsActive.Value).Count(); //số controller
             #endregion
 
             //chạy qlearning
-            var newValue = _qLearning.Run(rwConfig.R, rwConfig.W, N, l1, l2, NOE, numSuccess, numRequest,
+            var newValue = _qLearning.Run(rwConfig.R, rwConfig.W, N, l1, l2, VStalenessAvg, VStalenessAvgInt, numSuccess, numRequest,
                 oldRewards, oldQTable, _logState, t, nPull, violateRead, violateWrite);
             oldRewards = newValue.rewards;
             oldQTable = newValue.qTable;
@@ -156,34 +187,9 @@ namespace KcsWriteLog.Services.HostedService
 
             #region log ve bieu do
             var timeRun = DateTime.Now;
-
-            _context.LogQlearningReads.Add(new LogQlearningRead
-            {
-                NumViolations = logRead.Where(o => o.ClientMetric > TimeSpan.FromMilliseconds(thresholdRead)).Count(),
-                TimeRun = timeRun
-            });
-
-            _context.LogQlearningWrites.Add(new LogQlearningWrite
-            {
-                NumViolations = logWrite.Where(o => o.StaleMetric > TimeSpan.FromMilliseconds(thresholdWrite)).Count(),
-                TimeRun = timeRun
-            });
-
             _context.LogQlearningRatios.Add(new LogQlearningRatio
             {
                 Ratio = numSuccess / (double)numRequest,
-                TimeRun = timeRun
-            });
-
-            _context.LogLatencyReads.Add(new LogLatencyRead
-            {
-                Latency = LatencyReadAvg.TotalMilliseconds,
-                TimeRun = timeRun
-            });
-
-            _context.LogLatencyWrites.Add(new LogLatencyWrite
-            {
-                Latency = LatencyWriteAvg.TotalMilliseconds,
                 TimeRun = timeRun
             });
             #endregion
@@ -200,10 +206,10 @@ namespace KcsWriteLog.Services.HostedService
             _context.SaveChanges();
 
             #region save q table to text
-            //var jsonRewards = JsonSerializer.Serialize(oldRewards);
-            //var jsonQtable = JsonSerializer.Serialize(oldQTable);
+            var jsonRewards = JsonSerializer.Serialize(oldRewards);
+            var jsonQtable = JsonSerializer.Serialize(oldQTable);
             //File.WriteAllText(@"C:\Users\84389\Documents\sdn\jsonRewards.json", jsonRewards);
-            //File.WriteAllText(@"C:\Users\84389\Documents\sdn\jsonQtable.json", jsonQtable);
+            File.WriteAllText(@"C:\Users\84389\Documents\sdn\jsonQtable.json", jsonQtable);
             #endregion
         }
 

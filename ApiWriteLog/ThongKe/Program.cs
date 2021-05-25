@@ -364,7 +364,7 @@ namespace ThongKe
         static void StatisticStalenessVMaxRange(double rangeSecond)
         {
             var context = new KCS_DATAContext();
-            var list = context.DataTrainings.Where(o => o.ClientMetric != TimeSpan.Zero && o.VstalenessMax < 10).Select(o => new
+            var list = context.DataTrainings.Where(o => o.ClientMetric != TimeSpan.Zero && o.VstalenessMax < 20).Select(o => new
             {
                 o.Id,
                 o.VstalenessMax,
@@ -404,7 +404,7 @@ namespace ThongKe
         static void StatisticStalenessVavgRange(double rangeSecond)
         {
             var context = new KCS_DATAContext();
-            var list = context.DataTrainings.Where(o => o.ClientMetric != TimeSpan.Zero && o.VstalenessMax < 10).Select(o => new
+            var list = context.DataTrainings.Where(o => o.ClientMetric != TimeSpan.Zero && o.VstalenessMax < 20).Select(o => new
             {
                 o.Id,
                 o.VstalenessAvg,
@@ -444,7 +444,7 @@ namespace ThongKe
         static void StatisticStalenessTRange(double rangeSecond)
         {
             var context = new KCS_DATAContext();
-            var list = context.DataTrainings.Where(o => o.ClientMetric != TimeSpan.Zero && o.VstalenessMax < 10).Select(o => new
+            var list = context.DataTrainings.Where(o => o.ClientMetric != TimeSpan.Zero && o.VstalenessMax < 20).Select(o => new
             {
                 o.Id,
                 o.TstalenessAvg,
@@ -496,12 +496,12 @@ namespace ThongKe
 
 
             #region thống kê theo khoảng thời gian
-           //StatisticLatencyReadRange(120);
-            //StatisticLatencyWriteRange(120);
+            //StatisticLatencyReadRange(120);
+            StatisticLatencyWriteRange(120);
 
-           // StatisticStalenessVMaxRange(120);
-           // StatisticStalenessVavgRange(120);
-            StatisticStalenessTRange(120);
+            //StatisticStalenessVMaxRange(120);
+            //StatisticStalenessVavgRange(120);
+            //StatisticStalenessTRange(120);
             #endregion
         }
     }

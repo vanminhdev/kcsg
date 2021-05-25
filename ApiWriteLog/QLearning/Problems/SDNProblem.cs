@@ -1,4 +1,5 @@
 ﻿using QLearningProject.MachineLearning;
+using QLearningProject.Run;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -9,8 +10,8 @@ namespace QLearningProject.Problems
     {
         public Dictionary<int, Tuple<int, int, int>> DicState = new Dictionary<int, Tuple<int, int, int>>();
         public double[][] rewards { get; set; }
-        public int NumberOfStates => 301 * 301 * 101;
-        public int NumberOfActions => 6;
+        public int NumberOfStates => (int)(100 * 100);
+        public int NumberOfActions => QLearningRun.numAction;
 
         /// <summary>
         /// Problem chứa danh sách state, bảng reward
@@ -24,7 +25,7 @@ namespace QLearningProject.Problems
                 rewards = new double[NumberOfStates + 1][];
                 for (int i = 0; i < NumberOfStates + 1; i++)
                 {
-                    rewards[i] = new double[] { 0, 0, 0, 0, 0, 0 };
+                    rewards[i] = new double[] { 0, 0, 0, 0, 0, 0, 0 };
                 }
             }
             else
@@ -34,17 +35,18 @@ namespace QLearningProject.Problems
         }
 
         /// <summary>
-        /// với mỗi L1 L2 NOE là 1 action tương ứng
+        /// với mỗi L1 L2 VStalenessAvg là 1 action tương ứng
         /// </summary>
         /// <param name="L1"></param>
         /// <param name="L2"></param>
-        /// <param name="NOE"></param>
+        /// <param name="VStalenessAvg"></param>
         /// <returns></returns>
-        public int GetState(int L1, int L2, int NOE)
+        public int GetState(int L1, int L2, int VStalenessAvg)
         {
-            return NOE + L2 * 100 + L1 * 30000;
-            //return NOE + L2 * 100 + L1 * 10000;
-            //return svalue[L1,L2,NOE];
+            return (int)Math.Round(L2 / 5.0) * 10 + (int)Math.Round(L1 / 10.0);
+            //return VStalenessAvg * 100 * 100 + L2 * 100 + L1;
+            //return VStalenessAvg + L2 * 100 + L1 * 10000;
+            //return svalue[L1,L2,VStalenessAvg];
         }
 
         /// <summary>
@@ -67,7 +69,7 @@ namespace QLearningProject.Problems
                 {
                     if (rewards[i][j] != 0)
                     {
-                        sb.Append($"{i}: {rewards[i][0]} {rewards[i][1]} {rewards[i][2]} {rewards[i][3]} {rewards[i][4]} {rewards[i][5]}\n");
+                        sb.Append($"{i}: {rewards[i][0]} {rewards[i][1]} {rewards[i][2]} {rewards[i][3]} {rewards[i][4]} {rewards[i][5]} {rewards[i][6]}\n");
                         break;
                     }
                 }

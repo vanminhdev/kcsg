@@ -22,7 +22,7 @@ namespace QLearningProject.Run
         /// Chạy xong trả ra R W mới
         /// </summary>
         /// <returns></returns>
-        public RWValueVegas Run(int r, int w, int N, int l1, int l2, int NOE, int numSuccess, int numRequest, double[][] oldRewards, double[][] oldQTable,
+        public RWValueVegas Run(int r, int w, int N, int l1, int l2, int VStalenessAvg, int numSuccess, int numRequest, double[][] oldRewards, double[][] oldQTable,
             List<LogState> logState, Queue<double> logCSC, bool violateRead, bool violateWrite)
         {
             LogState lastState = null;
@@ -47,20 +47,20 @@ namespace QLearningProject.Run
             int initialState = 0;
             if (lastState != null) //cập nhật lại reward tại vị trí (state,action) cũ
             {
-                _loggerQlearningRun.LogInformation($"Last state {problem.GetState(lastState.l1, lastState.l2, lastState.NOE)}");
-                problem.rewards[problem.GetState(lastState.l1, lastState.l2, lastState.NOE)][lastState.action] = newReward;
+                _loggerQlearningRun.LogInformation($"Last state {problem.GetState(lastState.l1, lastState.l2, lastState.VStalenessAvg)}");
+                problem.rewards[problem.GetState(lastState.l1, lastState.l2, lastState.VStalenessAvg)][lastState.action] = newReward;
                 //từ lần thứ 2 trở đi lấy init state bằng state trước đó
-                initialState = problem.GetState(lastState.l1, lastState.l2, lastState.NOE);
+                initialState = problem.GetState(lastState.l1, lastState.l2, lastState.VStalenessAvg);
 
                 //tinh q value
-                int intCurrState = problem.GetState(l1, l2, NOE);
-                int intLastState = problem.GetState(lastState.l1, lastState.l2, lastState.NOE);
+                int intCurrState = problem.GetState(l1, l2, VStalenessAvg);
+                int intLastState = problem.GetState(lastState.l1, lastState.l2, lastState.VStalenessAvg);
                 qLearning.UpdateQTable(intCurrState, intLastState, lastState.action, newReward);
             }
             else // lần đầu set reward
             {
                 //lựa chọn action
-                int state = problem.GetState(l1, l2, NOE);
+                int state = problem.GetState(l1, l2, VStalenessAvg);
 
                 //khoi tao reward
                 int action = qLearning.SelectAction(state);
@@ -72,7 +72,7 @@ namespace QLearningProject.Run
             {
                 l1 = l1,
                 l2 = l2,
-                NOE = NOE,
+                VStalenessAvg = VStalenessAvg,
                 action = 0 //chưa gán action sau khi run mới có action
             });
 
