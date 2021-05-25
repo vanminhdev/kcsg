@@ -15,13 +15,13 @@ from graph import Graph
 
 os.system("sudo mn -c")
 
-n_controllers = 9
-
 #Domain Controller
-Domain=['192.168.31.132', '192.168.31.238', '192.168.31.95', '192.168.31.17',
-        '192.168.31.219', '192.168.31.229', '192.168.31.174', '192.168.31.203',
-        '192.168.31.184']
-#Domain=['192.168.31.128', '192.168.31.128']
+# Domain=['192.168.31.132', '192.168.31.238', '192.168.31.95', '192.168.31.17',
+#         '192.168.31.219', '192.168.31.229', '192.168.31.174', '192.168.31.203',
+#         '192.168.31.184']
+Domain=['192.168.31.132', '192.168.31.238']
+
+n_controllers = len(Domain)
 
 net = Mininet( topo=None, build=False)
 
@@ -30,7 +30,7 @@ controllers = {}
 for index in range(0, n_controllers):
     controller_name = "c" + str(index + 1)
     controller = net.addController(controller_name, controller=RemoteController, ip=Domain[index], port=6653)
-    controllers[controller_name] = controller 
+    controllers[controller_name] = controller
 
 hosts = {}
 switches = {}
@@ -184,9 +184,9 @@ def forwarding():
     hostSrc = hosts[src]
     hostDst = hosts[dst]
 
-    print(hostSrc)
-    print(hostDst)
-
+    print("host src ",hostSrc)
+    print("host dst ",hostDst)
+    print(hostDst.IP())
     comm = 'ping -c1 -W 1 ' + str(hostDst.IP())
     print(comm)
     result = hostSrc.cmd(comm)
@@ -195,5 +195,9 @@ def forwarding():
     print(sent, received)
     return (str(sent == received), 200)
 
+# hosts_save["h1"].cmd("vlc")
+# hosts_save["h106"].cmd("vlc")
+
+#net.start()
 app.run(host='0.0.0.0', debug=True, use_reloader=False)
 #CLI(net)
